@@ -12,8 +12,8 @@ interface WalletAccount {
 interface AuthContextType {
   account: WalletAccount | null
   isConnecting: boolean
-  connectWallet: (address: string, chainId: number) => void
-  disconnectWallet: () => void
+  connectWallet: (address: string, chainId: number) => Promise<void>
+  disconnectWallet: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -22,32 +22,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [account, setAccount] = useState<WalletAccount | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
 
-  // Load wallet from localStorage on mount
+  // Check session on mount
   useEffect(() => {
-    const stored = localStorage.getItem("walletAccount")
-    if (stored) {
-      try {
-        setAccount(JSON.parse(stored))
-      } catch {
-        // Ignore parsing errors
-      }
-    }
+    checkSession()
   }, [])
 
-  const connectWallet = (address: string, chainId: number) => {
-    setIsConnecting(true)
-    // Simulate connection delay
-    setTimeout(() => {
-      const walletAccount = { address, chainId, isConnected: true }
-      setAccount(walletAccount)
-      localStorage.setItem("walletAccount", JSON.stringify(walletAccount))
-      setIsConnecting(false)
-    }, 500)
+  const checkSession = async () => {
+    try {
+      const response = await fetch('/api/auth/verify')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.authenticated) {
+          setAccount({
+            address: data.walletAddress,
+            chainId: data.chainId,
+            isConnected: true
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Session check failed:', error)
+    }
   }
 
-  const disconnectWallet = () => {
-    setAccount(null)
-    localStorage.removeItem("walletAccount")
+  const connectWallet = async (address: string, chainId: number) => {
+    setIsConnecting(true)
+    try {
+      // Call backend API to authenticate
+      const response = await fetch('/api/auth/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          walletAddress: address, 
+          chainId,
+          signature: 'mock-signature' // In production, sign a message with MetaMask
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAccount({ 
+          address: data.walletAddress, 
+          chainId: data.chainId, 
+          isConnected: true 
+        })
+      } else {
+        throw new Error('Authentication failed')
+      }
+    } catch (error) {
+      console.error('Connect wallet error:', error)
+      throw error
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  const disconnectWallet = async () => {
+    try {
+      await fetch('/api/auth/disconnect', { method: 'POST' })
+      setAccount(null)
+    } catch (error) {
+      console.error('Disconnect error:', error)
+    }
   }
 
   return (

@@ -1,5 +1,9 @@
 "use client"
-
+declare global {
+  interface Window {
+    ethereum?: any
+  }
+}
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
@@ -13,18 +17,38 @@ export default function SignInPage() {
   const [copied, setCopied] = useState(false)
 
   const handleConnectMetaMask = async () => {
-    // Simulate wallet connection
-    const mockAddress = "0x742d35Cc6634C0532925a3b844Bc0e7b3bA3dAbC"
-    const mockChainId = 137
+    try {
+      // Check if MetaMask is installed
+      if (typeof window.ethereum === 'undefined') {
+        alert('Please install MetaMask to continue')
+        return
+      }
 
-    setDisplayAddress(mockAddress)
-    setTimeout(() => {
-      connectWallet(mockAddress, mockChainId)
-      // Redirect to dashboard after connection
+      // Request account access
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      })
+      const address = accounts[0]
+
+      // Get chain ID
+      const chainId = await window.ethereum.request({ 
+        method: 'eth_chainId' 
+      })
+      const chainIdDecimal = parseInt(chainId, 16)
+
+      setDisplayAddress(address)
+
+      // Connect wallet through auth context
+      await connectWallet(address, chainIdDecimal)
+
+      // Redirect to dashboard
       setTimeout(() => {
-        router.push("/")
+        router.push("/dashboard")
       }, 800)
-    }, 1500)
+    } catch (error) {
+      console.error('MetaMask connection error:', error)
+      alert('Failed to connect wallet. Please try again.')
+    }
   }
 
   const handleCopyAddress = () => {

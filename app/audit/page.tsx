@@ -70,10 +70,7 @@ export default function AuditPage() {
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Smart Contract Audit</h1>
-          <p className="text-foreground/60">Upload your Solidity contract for AI-powered vulnerability analysis</p>
-        </div>
+        
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Panel - Upload & Code Editor */}

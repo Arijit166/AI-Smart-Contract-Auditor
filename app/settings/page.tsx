@@ -8,10 +8,6 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Settings</h1>
-          <p className="text-foreground/60">Manage your preferences and configuration</p>
-        </div>
 
         <div className="space-y-6">
           {/* Notifications */}

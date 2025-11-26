@@ -22,8 +22,15 @@ export default function Sidebar() {
 
   const isActive = (href: string) => pathname === href
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
   const handleLogout = () => {
-    disconnectWallet()
+    setShowLogoutModal(true)
+  }
+
+  const confirmLogout = async () => {
+    await disconnectWallet()
+    setShowLogoutModal(false)
     router.push("/auth")
   }
 
@@ -102,6 +109,36 @@ export default function Sidebar() {
 
       {/* Mobile backdrop */}
       {isOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsOpen(false)} />}
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-sidebar border-2 border-sidebar-border rounded-lg p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-2">
+                <LogOut className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-bold text-sidebar-primary">Disconnect Wallet?</h3>
+              <p className="text-sm text-sidebar-foreground/60">
+                You'll need to reconnect your wallet to access the platform again.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg bg-sidebar-accent hover:bg-sidebar-accent/80 text-sidebar-foreground font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium transition-colors border border-red-500/30"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
