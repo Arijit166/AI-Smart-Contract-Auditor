@@ -14,18 +14,8 @@ export default function TopNavbar() {
   const getPageTitle = () => {
     switch (pathname) {
       case "/":
-      case "/dashboard":
-        return account ? `Welcome back!  ${account.address.slice(0, 6)}...${account.address.slice(-4)}` : "Welcome back!"
-      case "/audit":
-        return "Smart Contract Audit"
-      case "/deploy":
-        return "Deploy Contract"
-      case "/history":
-        return "Audit History"
-      case "/settings":
-        return "Settings"
       default:
-        return "Smart Contract Auditor"
+        return account ? `Welcome back!  ${account.address.slice(0, 6)}...${account.address.slice(-4)}` : "Welcome back!"
     }
   }
 

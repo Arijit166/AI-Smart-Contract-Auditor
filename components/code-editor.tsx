@@ -11,12 +11,7 @@ export default function CodeEditor({ value, onChange }: CodeEditorProps) {
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="// Paste your Solidity code here
-pragma solidity ^0.8.0;
-
-contract MyContract {
-  // Your code...
-}"
+        placeholder="// Paste your Solidity code here"
         className="w-full h-64 bg-input border-0 text-foreground font-mono text-sm p-4 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
       />
     </div>
