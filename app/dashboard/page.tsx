@@ -54,9 +54,6 @@ export default function Home() {
                 Start Audit <ArrowRight size={20} />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="gap-2 border-border hover:bg-card bg-transparent">
-              View Documentation
-            </Button>
           </div>
         </div>
 

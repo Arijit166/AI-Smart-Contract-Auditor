@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -15,9 +15,9 @@ export default function AuditPage() {
   const [auditResults, setAuditResults] = useState(null)
   const [fileUploaded, setFileUploaded] = useState(false)
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = (file: File) => {
     if (file && file.name.endsWith(".sol")) {
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -25,46 +25,50 @@ export default function AuditPage() {
         setFileUploaded(true)
       }
       reader.readAsText(file)
+    } else {
+      alert("Please upload a .sol file")
     }
   }
 
+const handleDrop = (e: React.DragEvent) => {
+  e.preventDefault()
+  const file = e.dataTransfer.files[0]
+  handleFileSelect(file)
+}
+
   const handleRunAudit = async () => {
+    if (!code.trim()) {
+      alert("Please provide code to audit")
+      return
+    }
+    
     setIsAuditing(true)
-    // Simulate AI audit
-    setTimeout(() => {
-      setAuditResults({
-        riskScore: 72,
-        vulnerabilities: [
-          {
-            id: 1,
-            severity: "high",
-            title: "Unchecked Call Return Value",
-            line: 45,
-            description: "The return value of external call is not checked",
-          },
-          {
-            id: 2,
-            severity: "medium",
-            title: "State Variable Shadowing",
-            line: 28,
-            description: "Variable shadows a state variable from parent contract",
-          },
-          {
-            id: 3,
-            severity: "low",
-            title: "Missing Event Log",
-            line: 62,
-            description: "No event emitted for critical state change",
-          },
-        ],
-        suggestions: [
-          "Add require() checks for external calls",
-          "Implement access control modifiers",
-          "Use SafeMath library for arithmetic operations",
-        ],
+    setAuditResults(null)
+    
+    try {
+      const response = await fetch("http://localhost:8000/api/audit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }),
       })
+      
+      if (!response.ok) {
+        throw new Error("Audit failed")
+      }
+      
+      const data = await response.json()
+      setAuditResults({
+        ...data.audit,
+        rawOutput: JSON.stringify(data, null, 2)
+      });    
+    } catch (error) {
+      console.error("Audit error:", error)
+      alert("Audit failed. Please check if the backend is running.")
+    } finally {
       setIsAuditing(false)
-    }, 2000)
+    }
   }
 
   return (
@@ -80,7 +84,15 @@ export default function AuditPage() {
               className="glass-effect border-border hover:border-primary/50 transition-all p-8 text-center cursor-pointer group"
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
+              onClick={() => fileInputRef.current?.click()}
             >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".sol"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+              />
               <div className="flex flex-col items-center gap-4">
                 <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center group-hover:glow-cyan transition-all">
                   <Upload className="w-8 h-8 text-primary" />
