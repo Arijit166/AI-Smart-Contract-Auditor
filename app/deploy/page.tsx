@@ -154,7 +154,7 @@ export default function DeployPage() {
           {/* Header */}
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-foreground">Deploy Contract</h1>
-            <p className="text-foreground/60">Compile and deploy your Solidity contract to testnet using your wallet</p>
+            <p className="text-foreground/60">Compile and deploy your auto-fixed Solidity contract to testnet using your wallet</p>
           </div>
 
           {error && (
@@ -192,7 +192,7 @@ export default function DeployPage() {
                   <textarea
                     value={contractCode}
                     onChange={(e) => setContractCode(e.target.value)}
-                    placeholder="// SPDX-License-Identifier: MIT&#10;pragma solidity ^0.8.0;&#10;&#10;contract MyContract {&#10;  // Your code here&#10;}"
+                    placeholder="// Paste your auto-fixed Solidity contract code here..."
                     className="w-full h-64 bg-input border border-border rounded-lg px-4 py-3 text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
                 </div>

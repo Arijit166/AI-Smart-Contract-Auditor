@@ -8,6 +8,7 @@ export interface Deployment {
   compiledBytecode: string
   abi: any[]
   network: 'polygon-amoy' | 'flow-testnet' | 'celo-sepolia'
+  auditId?: string
   contractAddress: string
   deploymentHash: string
   gasUsed: string

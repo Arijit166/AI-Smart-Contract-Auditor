@@ -1,15 +1,16 @@
 "use client"
 
 import React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import CodeEditor from "@/components/code-editor"
 import AuditResults from "@/components/audit-results"
 import { Upload, FileText, AlertCircle } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 export default function AuditPage() {
+  const { account } = useAuth()
   const [code, setCode] = useState("")
   const [isAuditing, setIsAuditing] = useState(false)
   const [auditResults, setAuditResults] = useState(null)
@@ -30,11 +31,11 @@ export default function AuditPage() {
     }
   }
 
-const handleDrop = (e: React.DragEvent) => {
-  e.preventDefault()
-  const file = e.dataTransfer.files[0]
-  handleFileSelect(file)
-}
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    handleFileSelect(file)
+  }
 
   const handleRunAudit = async () => {
     if (!code.trim()) {
@@ -46,6 +47,7 @@ const handleDrop = (e: React.DragEvent) => {
     setAuditResults(null)
     
     try {
+      // Run audit
       const response = await fetch("http://localhost:8000/api/audit", {
         method: "POST",
         headers: {
@@ -62,7 +64,22 @@ const handleDrop = (e: React.DragEvent) => {
       setAuditResults({
         ...data.audit,
         rawOutput: JSON.stringify(data, null, 2)
-      });    
+      })
+
+      // Save to database
+      if (account?.address) {
+        await fetch("/api/audit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contractCode: code,
+            userAddress: account.address,
+            auditResults: data.audit,
+          }),
+        })
+      }
     } catch (error) {
       console.error("Audit error:", error)
       alert("Audit failed. Please check if the backend is running.")
@@ -74,7 +91,10 @@ const handleDrop = (e: React.DragEvent) => {
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Smart Contract Audit</h1>
+          <p className="text-foreground/60">Upload and analyze your Solidity contracts for vulnerabilities</p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Panel - Upload & Code Editor */}
