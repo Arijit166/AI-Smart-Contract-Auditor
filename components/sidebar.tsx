@@ -17,7 +17,7 @@ export default function Sidebar() {
     { label: "Audit", icon: Zap, href: "/audit" },
     { label: "Deploy", icon: Deploy, href: "/deploy" },
     { label: "History", icon: History, href: "/history" },
-    { label: "Settings", icon: Settings, href: "/settings" },
+    { label: "Accounts", icon: Settings, href: "/accounts" }, 
   ]
 
   const isActive = (href: string) => pathname === href
