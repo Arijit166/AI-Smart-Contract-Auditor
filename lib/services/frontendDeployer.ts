@@ -35,10 +35,11 @@ export async function deployContractWithUserWallet(
 
     // Map network string to chainId
     const networkChainIds: Record<string, number> = {
-      'polygon-amoy': 80002,
-      'ethereum-sepolia': 11155111,
-      'arbitrum-sepolia': 421614,
-    }
+    'polygon-amoy': 80002,
+    'flow-testnet': 545,
+    'celo-sepolia': 11142220
+,
+  }
 
     const expectedChainId = networkChainIds[network]
     if (!expectedChainId) {
@@ -146,15 +147,16 @@ export function getNetworkInfo(network: string) {
       chainId: 80002,
       faucet: 'https://faucet.polygon.technology/',
     },
-    'ethereum-sepolia': {
-      name: 'Ethereum Sepolia',
-      chainId: 11155111,
-      faucet: 'https://www.alchemy.com/faucets/ethereum-sepolia',
+    'flow-testnet': {
+      name: 'Flow Testnet',
+      chainId: 545,
+      faucet: 'https://testnet-faucet.onflow.org/',
     },
-    'arbitrum-sepolia': {
-      name: 'Arbitrum Sepolia',
-      chainId: 421614,
-      faucet: 'https://faucet.arbitrum.io/',
+    'celo-sepolia': {
+      name: 'Celo sepolia',
+      chainId: 11142220
+,
+      faucet: 'https://forno.celo-sepolia.celo-testnet.org',
     },
   }
   return networkInfo[network]

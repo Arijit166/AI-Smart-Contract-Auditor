@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validNetworks = ['polygon-amoy', 'ethereum-sepolia', 'arbitrum-sepolia']
+    const validNetworks = ['polygon-amoy', 'flow-testnet', 'celo-sepolia']
     if (!validNetworks.includes(network)) {
       console.log('❌ [API] Invalid network:', network)
       return NextResponse.json(

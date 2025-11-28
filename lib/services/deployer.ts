@@ -12,15 +12,16 @@ const networks: Record<string, NetworkConfig> = {
     name: 'Polygon Amoy',
     chainId: 80002,
   },
-  'ethereum-sepolia': {
-    rpc: process.env.NEXT_PUBLIC_ETHEREUM_SEPOLIA_RPC || '',
-    name: 'Ethereum Sepolia',
-    chainId: 11155111,
+  'flow-testnet': {
+    rpc: process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC || 'https://testnet.evm.nodes.onflow.org',
+    name: 'Flow Testnet',
+    chainId: 545,
   },
-  'arbitrum-sepolia': {
-    rpc: process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC || '',
-    name: 'Arbitrum Sepolia',
-    chainId: 421614,
+  'celo-sepolia': {
+    rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC || 'https://forno.celo-sepolia.celo-testnet.org',
+    name: 'Celo sepolia',
+    chainId: 11142220
+,
   },
 }
 

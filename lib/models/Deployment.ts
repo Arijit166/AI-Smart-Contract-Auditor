@@ -7,7 +7,7 @@ export interface Deployment {
   contractCode: string
   compiledBytecode: string
   abi: any[]
-  network: 'polygon-amoy' | 'ethereum-sepolia' | 'arbitrum-sepolia'
+  network: 'polygon-amoy' | 'flow-testnet' | 'celo-sepolia'
   contractAddress: string
   deploymentHash: string
   gasUsed: string

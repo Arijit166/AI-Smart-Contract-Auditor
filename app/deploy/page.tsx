@@ -21,10 +21,10 @@ export default function DeployPage() {
   const [showCodeInput, setShowCodeInput] = useState(true)
 
   const networks = [
-    { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
-    { id: "ethereum-sepolia", name: "Ethereum Sepolia", icon: "⟠" },
-    { id: "arbitrum-sepolia", name: "Arbitrum Sepolia", icon: "🔵" },
-  ]
+  { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
+  { id: "flow-testnet", name: "Flow Testnet", icon: "💚" },
+  { id: "celo-sepolia", name: "Celo sepolia", icon: "🟡" },
+]
 
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address)
@@ -128,8 +128,8 @@ export default function DeployPage() {
     
     const explorers: Record<string, string> = {
       'polygon-amoy': 'https://amoy.polygonscan.com/address/',
-      'ethereum-sepolia': 'https://sepolia.etherscan.io/address/',
-      'arbitrum-sepolia': 'https://sepolia.arbiscan.io/address/',
+      'flow-testnet': 'https://evm-testnet.flowscan.io/address/',
+      'celo-sepolia': 'https://forno.celo-sepolia.celo-testnet.org/address/',
     }
     
     return explorers[selectedNetwork] + deploymentAddress
@@ -139,10 +139,10 @@ export default function DeployPage() {
     if (!transactionHash) return null
     
     const explorers: Record<string, string> = {
-      'polygon-amoy': 'https://amoy.polygonscan.com/tx/',
-      'ethereum-sepolia': 'https://sepolia.etherscan.io/tx/',
-      'arbitrum-sepolia': 'https://sepolia.arbiscan.io/tx/',
-    }
+    'polygon-amoy': 'https://amoy.polygonscan.com/tx/',
+    'flow-testnet': 'https://evm-testnet.flowscan.io/tx/',
+    'celo-sepolia': 'https://forno.celo-sepolia.celo-testnet.org/tx/',
+  }
     
     return explorers[selectedNetwork] + transactionHash
   }
