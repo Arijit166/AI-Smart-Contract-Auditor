@@ -1,5 +1,3 @@
-// File: app/api/audit/details/route.ts
-
 import { NextRequest, NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
 import { getDatabase } from '@/lib/db'

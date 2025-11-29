@@ -8,19 +8,18 @@ import CodeEditor from "@/components/code-editor"
 import AuditResults from "@/components/audit-results"
 import { Upload, FileText, AlertCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { useAudit } from "@/lib/audit-context"
+import { useRouter } from "next/navigation"
 
 export default function AuditPage() {
   const { account } = useAuth()
+  const { setAuditData } = useAudit()
+  const router = useRouter()
   const [code, setCode] = useState("")
   const [isAuditing, setIsAuditing] = useState(false)
   const [auditResults, setAuditResults] = useState(null)
   const [fileUploaded, setFileUploaded] = useState(false)
-  const [mintingNFT, setMintingNFT] = useState(false)
-  const [publishingOnChain, setPublishingOnChain] = useState(false)
-  const [nftResult, setNftResult] = useState<any>(null)
-  const [publishResult, setPublishResult] = useState<any>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [deploymentAddress, setDeploymentAddress] = useState<string | null>(null)
 
   const handleFileSelect = (file: File) => {
     if (file && file.name.endsWith(".sol")) {
@@ -65,9 +64,21 @@ export default function AuditPage() {
       }
       
       const data = await response.json()
-      setAuditResults({
+      const auditResultsData = {
         ...data.audit,
         rawOutput: JSON.stringify(data, null, 2)
+      }
+      setAuditResults(auditResultsData)
+
+      // ✅ SAVE AUDIT DATA TO CONTEXT
+      setAuditData({
+        originalCode: code,
+        fixedCode: data.audit.fixedCode || code,
+        riskScore: data.audit.riskScore || 0,
+        vulnerabilities: data.audit.vulnerabilities || [],
+        suggestions: data.audit.suggestions || [],
+        contractName: data.audit.contractName || 'Contract',
+        timestamp: Date.now()
       })
 
       // Save to database
@@ -89,76 +100,6 @@ export default function AuditPage() {
       alert("Audit failed. Please check if the backend is running.")
     } finally {
       setIsAuditing(false)
-    }
-  }
-
-  const handleMintNFT = async () => {
-    if (!auditResults || !account?.address) return
-
-    setMintingNFT(true)
-    try {
-      const response = await fetch('/api/onchain/mint-certificate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          network: 'polygon-amoy',
-          userAddress: account.address,
-          originalCode: code,
-          fixedCode: (auditResults as any).fixedCode || '',
-          auditData: {
-            riskScore: (auditResults as any).riskScore || 0,
-            vulnerabilities: (auditResults as any).vulnerabilities || [],
-          },
-        }),
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setNftResult(data)
-        alert('NFT Certificate minted successfully!')
-      } else {
-        alert('Failed to mint NFT: ' + data.error)
-      }
-    } catch (error: any) {
-      alert('Error: ' + error.message)
-    } finally {
-      setMintingNFT(false)
-    }
-  }
-
-  const handlePublishOnChain = async () => {
-    if (!nftResult || !deploymentAddress) {
-      alert('Please mint NFT certificate and deploy contract first')
-      return
-    }
-
-    setPublishingOnChain(true)
-    try {
-      const response = await fetch('/api/onchain/publish-audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          network: 'polygon-amoy',
-          contractAddress: deploymentAddress,
-          originalCodeHash: nftResult.ipfs.originalCodeCID,
-          fixedCodeHash: nftResult.ipfs.fixedCodeCID,
-          riskScore: (auditResults as any)?.riskScore || 0,
-          ipfsPdfCID: nftResult.ipfs.pdfCID,
-          ipfsCodeCID: nftResult.ipfs.fixedCodeCID,
-        }),
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setPublishResult(data)
-        alert('Audit published on-chain successfully!')
-      } else {
-        alert('Failed to publish: ' + data.error)
-      }
-    } catch (error: any) {
-      alert('Error: ' + error.message)
-    } finally {
-      setPublishingOnChain(false)
     }
   }
 
@@ -238,41 +179,6 @@ export default function AuditPage() {
               <AuditResults results={auditResults} />
             )}
           </div>
-          {auditResults && (
-            <div className="col-span-1 lg:col-span-2">
-              <Card className="glass-effect border-border p-4">
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleMintNFT}
-                      disabled={mintingNFT || !account?.isConnected}
-                      className="flex-1 bg-purple-500 hover:bg-purple-600"
-                    >
-                      {mintingNFT ? 'Minting...' : '🎨 Mint NFT Certificate'}
-                    </Button>
-                    
-                    {nftResult && (
-                      <Button
-                        onClick={handlePublishOnChain}
-                        disabled={publishingOnChain || !deploymentAddress}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600"
-                      >
-                        {publishingOnChain ? 'Publishing...' : '📝 Publish On-Chain'}
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {nftResult && !deploymentAddress && (
-                    <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3">
-                      <p className="text-sm text-yellow-600">
-                        💡 Deploy your fixed contract first to publish the audit on-chain
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     </div>

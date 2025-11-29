@@ -7,6 +7,7 @@ import { Check, Copy, ExternalLink, Zap, AlertCircle, Loader } from "lucide-reac
 import { useAuth } from "@/lib/auth-context"
 import { compileContract } from "@/lib/services/compiler"
 import { deployContractWithUserWallet, getNetworkInfo } from "@/lib/services/frontendDeployer"
+import { useAudit } from "@/lib/audit-context"
 
 export default function DeployPage() {
   const { account } = useAuth()
@@ -19,6 +20,11 @@ export default function DeployPage() {
   const [error, setError] = useState<string | null>(null)
   const [contractCode, setContractCode] = useState("")
   const [showCodeInput, setShowCodeInput] = useState(true)
+  const [mintingNFT, setMintingNFT] = useState(false)
+  const [publishingOnChain, setPublishingOnChain] = useState(false)
+  const [nftResult, setNftResult] = useState<any>(null)
+  const [publishResult, setPublishResult] = useState<any>(null)
+  const { auditData } = useAudit()
 
   const networks = [
   { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -145,6 +151,94 @@ export default function DeployPage() {
   }
     
     return explorers[selectedNetwork] + transactionHash
+  }
+
+  const handleMintNFT = async () => {
+    if (!auditData || !account?.address || !deploymentAddress) {
+      setError("Please complete audit and deployment first")
+      return
+    }
+
+    setMintingNFT(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/onchain/mint-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          network: selectedNetwork,
+          userAddress: account.address,
+          originalCode: auditData.originalCode,
+          fixedCode: auditData.fixedCode,
+          auditData: {
+            riskScore: auditData.riskScore,
+            vulnerabilities: auditData.vulnerabilities,
+          },
+        }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setNftResult(data)
+        setError(null)
+      } else {
+        setError('Failed to mint NFT: ' + data.error)
+      }
+    } catch (err: any) {
+      setError('Mint NFT error: ' + err.message)
+    } finally {
+      setMintingNFT(false)
+    }
+  }
+
+  const handlePublishOnChain = async () => {
+    if (!nftResult || !deploymentAddress || !auditData) {
+      setError('Please mint NFT certificate first')
+      return
+    }
+
+    setPublishingOnChain(true)
+    setError(null)
+
+    try {
+      // ✅ Calculate proper bytes32 hashes from the actual code
+      const { ethers } = await import('ethers')
+      const originalCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.originalCode))
+      const fixedCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.fixedCode))
+
+      console.log('🔵 Publishing with hashes:', {
+        originalCodeHash,
+        fixedCodeHash,
+        contractAddress: deploymentAddress
+      })
+
+      const response = await fetch('/api/onchain/publish-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          network: selectedNetwork,
+          contractAddress: deploymentAddress,
+          originalCodeHash: originalCodeHash,  // ✅ Now it's bytes32 (0x1234...)
+          fixedCodeHash: fixedCodeHash,        // ✅ Now it's bytes32 (0x1234...)
+          riskScore: auditData.riskScore,
+          ipfsPdfCID: nftResult.ipfs.pdfCID,
+          ipfsCodeCID: nftResult.ipfs.fixedCodeCID,
+        }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setPublishResult(data)
+        setError(null)
+      } else {
+        setError('Failed to publish: ' + data.error)
+      }
+    } catch (err: any) {
+      setError('Publish error: ' + err.message)
+    } finally {
+      setPublishingOnChain(false)
+    }
   }
 
   return (
@@ -330,6 +424,107 @@ export default function DeployPage() {
                 <Zap size={20} />
                 Deploy Another Contract
               </Button>
+              {/* NFT & On-Chain Publishing Section */}
+              {deploymentAddress && auditData && (
+                <Card className="glass-effect border-border p-6 space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-foreground">Certificate & On-Chain Publishing</h3>
+                    <p className="text-sm text-foreground/60">
+                      Mint an NFT certificate and publish audit results on-chain
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      onClick={handleMintNFT}
+                      disabled={mintingNFT || !account?.isConnected || nftResult !== null}
+                      className="w-full bg-purple-500 hover:bg-purple-600 gap-2"
+                      size="lg"
+                    >
+                      {mintingNFT ? (
+                        <>
+                          <Loader className="w-5 h-5 animate-spin" />
+                          Minting NFT...
+                        </>
+                      ) : nftResult ? (
+                        <>
+                          <Check size={20} />
+                          NFT Minted ✓
+                        </>
+                      ) : (
+                        <>🎨 Mint NFT Certificate</>
+                      )}
+                    </Button>
+
+                    {nftResult && (
+                      <Button
+                        onClick={handlePublishOnChain}
+                        disabled={publishingOnChain || publishResult !== null}
+                        className="w-full bg-blue-500 hover:bg-blue-600 gap-2"
+                        size="lg"
+                      >
+                        {publishingOnChain ? (
+                          <>
+                            <Loader className="w-5 h-5 animate-spin" />
+                            Publishing...
+                          </>
+                        ) : publishResult ? (
+                          <>
+                            <Check size={20} />
+                            Published On-Chain ✓
+                          </>
+                        ) : (
+                          <>📝 Publish Audit On-Chain</>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {!auditData && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3">
+                      <p className="text-sm text-yellow-600">
+                        ⚠️ Please complete an audit first before minting NFT
+                      </p>
+                    </div>
+                  )}
+
+                  {nftResult && (
+                    <div className="pt-4 border-t border-border space-y-2 text-sm">
+                      <p className="text-foreground/60">
+                        NFT Token ID: <span className="text-primary font-mono">{nftResult.tokenId}</span>
+                      </p>
+                      <p className="text-foreground/60">
+                        IPFS Metadata:{" "}
+                        <a
+                          href={`https://gateway.pinata.cloud/ipfs/${nftResult.ipfs.metadataCID}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          View on IPFS
+                        </a>
+                      </p>
+                    </div>
+                  )}
+
+                  {publishResult && (
+                    <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-4">
+                      <p className="text-green-600 font-semibold">✓ Audit Successfully Published On-Chain</p>
+                      <p className="text-sm text-green-600/80 mt-1">
+                        Transaction:{" "}
+                        <a
+                          href={getNetworkExplorerTxLink() || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          {publishResult.transactionHash?.slice(0, 10)}...
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </Card>
+              )}
             </Card>
           ) : null}
         </div>
