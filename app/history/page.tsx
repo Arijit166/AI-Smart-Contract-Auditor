@@ -178,14 +178,14 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto ml-12 space-y-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Audit & Deployment History</h1>
-          <p className="text-foreground/60 mt-1">View all your previous audits and deployments</p>
+          <h1 className="text-3xl font-bold text-foreground pl-65">Audit & Deployment History</h1>
+          <p className="text-foreground/60 mt-1 pl-74">View all your previous audits and deployments</p>
         </div>
 
         {audits.length === 0 ? (
-          <Card className="glass-effect border-border p-8 text-center">
+          <Card className="glass-effect border-border p-8 text-center pl-50">
             <p className="text-foreground/60">No audit history yet. Start by auditing a contract!</p>
           </Card>
         ) : (

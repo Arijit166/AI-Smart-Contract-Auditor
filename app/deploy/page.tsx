@@ -149,12 +149,12 @@ export default function DeployPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto ml-12 space-y-6">
         <div className="space-y-6">
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Deploy Contract</h1>
-            <p className="text-foreground/60">Compile and deploy your auto-fixed Solidity contract to testnet using your wallet</p>
+            <h1 className="text-3xl font-bold text-foreground pl-70">Deploy Contract</h1>
+            <p className="text-foreground/60 pl-30">Compile and deploy your auto-fixed Solidity contract to testnet using your wallet</p>
           </div>
 
           {error && (

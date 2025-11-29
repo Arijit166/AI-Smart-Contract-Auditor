@@ -21,6 +21,11 @@ export interface Audit {
   deploymentId?: string
   createdAt: Date
   updatedAt: Date
+  nftTokenId?: string
+  nftTransactionHash?: string
+  ipfsMetadataCID?: string
+  onChainPublished?: boolean
+  onChainTxHash?: string
 }
 
 export const AuditCollection = 'audits'

@@ -194,7 +194,7 @@ export default function AccountsPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto ml-3 space-y-6">
         <h1 className="text-3xl font-bold text-foreground mb-8">Manage Your Account</h1>
 
         <div className="flex flex-col lg:flex-row gap-6">

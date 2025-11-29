@@ -4,3 +4,7 @@ package.json
 .next/
 .env.local
 backend/.env
+contracts/.env
+contracts/artifacts/
+contracts/cache/
+contracts/deployments/

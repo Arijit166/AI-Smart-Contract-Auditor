@@ -15,8 +15,12 @@ export default function AuditPage() {
   const [isAuditing, setIsAuditing] = useState(false)
   const [auditResults, setAuditResults] = useState(null)
   const [fileUploaded, setFileUploaded] = useState(false)
-
+  const [mintingNFT, setMintingNFT] = useState(false)
+  const [publishingOnChain, setPublishingOnChain] = useState(false)
+  const [nftResult, setNftResult] = useState<any>(null)
+  const [publishResult, setPublishResult] = useState<any>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [deploymentAddress, setDeploymentAddress] = useState<string | null>(null)
 
   const handleFileSelect = (file: File) => {
     if (file && file.name.endsWith(".sol")) {
@@ -88,12 +92,82 @@ export default function AuditPage() {
     }
   }
 
+  const handleMintNFT = async () => {
+    if (!auditResults || !account?.address) return
+
+    setMintingNFT(true)
+    try {
+      const response = await fetch('/api/onchain/mint-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          network: 'polygon-amoy',
+          userAddress: account.address,
+          originalCode: code,
+          fixedCode: (auditResults as any).fixedCode || '',
+          auditData: {
+            riskScore: (auditResults as any).riskScore || 0,
+            vulnerabilities: (auditResults as any).vulnerabilities || [],
+          },
+        }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setNftResult(data)
+        alert('NFT Certificate minted successfully!')
+      } else {
+        alert('Failed to mint NFT: ' + data.error)
+      }
+    } catch (error: any) {
+      alert('Error: ' + error.message)
+    } finally {
+      setMintingNFT(false)
+    }
+  }
+
+  const handlePublishOnChain = async () => {
+    if (!nftResult || !deploymentAddress) {
+      alert('Please mint NFT certificate and deploy contract first')
+      return
+    }
+
+    setPublishingOnChain(true)
+    try {
+      const response = await fetch('/api/onchain/publish-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          network: 'polygon-amoy',
+          contractAddress: deploymentAddress,
+          originalCodeHash: nftResult.ipfs.originalCodeCID,
+          fixedCodeHash: nftResult.ipfs.fixedCodeCID,
+          riskScore: (auditResults as any)?.riskScore || 0,
+          ipfsPdfCID: nftResult.ipfs.pdfCID,
+          ipfsCodeCID: nftResult.ipfs.fixedCodeCID,
+        }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setPublishResult(data)
+        alert('Audit published on-chain successfully!')
+      } else {
+        alert('Failed to publish: ' + data.error)
+      }
+    } catch (error: any) {
+      alert('Error: ' + error.message)
+    } finally {
+      setPublishingOnChain(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Smart Contract Audit</h1>
-          <p className="text-foreground/60">Upload and analyze your Solidity contracts for vulnerabilities</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2 pl-85">Smart Contract Audit</h1>
+          <p className="text-foreground/60 pl-78">Upload and analyze your Solidity contracts for vulnerabilities</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -164,6 +238,41 @@ export default function AuditPage() {
               <AuditResults results={auditResults} />
             )}
           </div>
+          {auditResults && (
+            <div className="col-span-1 lg:col-span-2">
+              <Card className="glass-effect border-border p-4">
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleMintNFT}
+                      disabled={mintingNFT || !account?.isConnected}
+                      className="flex-1 bg-purple-500 hover:bg-purple-600"
+                    >
+                      {mintingNFT ? 'Minting...' : '🎨 Mint NFT Certificate'}
+                    </Button>
+                    
+                    {nftResult && (
+                      <Button
+                        onClick={handlePublishOnChain}
+                        disabled={publishingOnChain || !deploymentAddress}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600"
+                      >
+                        {publishingOnChain ? 'Publishing...' : '📝 Publish On-Chain'}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {nftResult && !deploymentAddress && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3">
+                      <p className="text-sm text-yellow-600">
+                        💡 Deploy your fixed contract first to publish the audit on-chain
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>
