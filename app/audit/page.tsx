@@ -10,6 +10,7 @@ import { Upload, FileText, AlertCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useAudit } from "@/lib/audit-context"
 import { useRouter } from "next/navigation"
+import { updateReputation } from "@/lib/services/reputation-service"
 
 export default function AuditPage() {
   const { account } = useAuth()
@@ -20,7 +21,7 @@ export default function AuditPage() {
   const [auditResults, setAuditResults] = useState(null)
   const [fileUploaded, setFileUploaded] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-
+  const [selectedNetwork, setSelectedNetwork] = useState('polygon-amoy')
   const handleFileSelect = (file: File) => {
     if (file && file.name.endsWith(".sol")) {
       const reader = new FileReader()
@@ -33,7 +34,11 @@ export default function AuditPage() {
       alert("Please upload a .sol file")
     }
   }
-
+  const networks = [
+    { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
+    { id: "flow-testnet", name: "Flow Testnet", icon: "💚" },
+    { id: "celo-sepolia", name: "Celo Sepolia", icon: "🟡" },
+  ]
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
@@ -71,13 +76,21 @@ export default function AuditPage() {
       }
       setAuditResults(auditResultsData)
 
+      const hasHighRiskFixes = data.audit.vulnerabilities?.some(
+        (v: any) => v.severity === 'critical' || v.severity === 'high'
+      )
+
+      if (hasHighRiskFixes && account?.address) {
+        await updateReputation('fix', account.address, selectedNetwork)
+      }
+
       // ✅ SAVE AUDIT DATA TO CONTEXT
       const dataToSave = {
         originalCode: code,
         fixedCode: data.audit.fixedCode || code,
         riskScore: data.audit.riskScore || 0,
         vulnerabilities: data.audit.vulnerabilities || [],
-        suggestions: data.audit.suggestions || [], // This should have data
+        suggestions: data.audit.suggestions || [], 
         contractName: data.audit.contractName || 'Contract',
         timestamp: Date.now()
       }
@@ -96,7 +109,7 @@ export default function AuditPage() {
             userAddress: account.address,
             auditResults: data.audit,
           }),
-        })
+        });await updateReputation('audit', account.address, selectedNetwork)
       }
     } catch (error) {
       console.error("Audit error:", error)
@@ -110,10 +123,25 @@ export default function AuditPage() {
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2 pl-85">Smart Contract Audit</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-2 pl-84">Smart Contract Audit</h1>
           <p className="text-foreground/60 pl-78">Upload and analyze your Solidity contracts for vulnerabilities</p>
         </div>
-
+        <div className="flex gap-3 mb-6 pl-73">
+          {networks.map((network) => (
+            <button
+              key={network.id}
+              onClick={() => setSelectedNetwork(network.id)}
+              className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                selectedNetwork === network.id
+                  ? "border-primary bg-primary/10 glow-cyan"
+                  : "border-border hover:border-primary/50 bg-card"
+              }`}
+            >
+              <span className="mr-2">{network.icon}</span>
+              <span className="text-sm font-semibold">{network.name}</span>
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Panel - Upload & Code Editor */}
           <div className="space-y-6">

@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 import { compileContract } from "@/lib/services/compiler"
 import { deployContractWithUserWallet, getNetworkInfo } from "@/lib/services/frontendDeployer"
 import { useAudit } from "@/lib/audit-context"
+import { updateReputation } from "@/lib/services/reputation-service"
 
 export default function DeployPage() {
   const { account } = useAuth()
@@ -113,6 +114,9 @@ export default function DeployPage() {
       setTransactionHash(deploymentResult.transactionHash || null)
       setGasUsed(deploymentResult.gasUsed || null)
       setShowCodeInput(false)
+      if (account?.address) {
+        await updateReputation('deployment', account.address, selectedNetwork)
+      }
     } catch (err: any) {
       setError(err.message || "Deployment error")
     } finally {
