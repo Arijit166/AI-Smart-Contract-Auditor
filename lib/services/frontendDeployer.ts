@@ -9,6 +9,29 @@ interface DeploymentResult {
   error?: string
 }
 
+async function ensurePolygonAmoyNetwork() {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [{
+        chainId: '0x13882',
+        chainName: 'Polygon Amoy Testnet',
+        nativeCurrency: {
+          name: 'MATIC',
+          symbol: 'MATIC',
+          decimals: 18
+        },
+        rpcUrls: ['https://rpc-amoy.polygon.technology/'],
+        blockExplorerUrls: ['https://amoy.polygonscan.com/']
+      }]
+    })
+  } catch (error: any) {
+    if (error.code === 4001) {
+      throw new Error('User rejected network addition')
+    }
+  }
+}
+
 export async function deployContractWithUserWallet(
   network: string,
   bytecode: string,
@@ -17,7 +40,6 @@ export async function deployContractWithUserWallet(
   try {
     console.log('🔵 [Frontend Deploy] Starting deployment on:', network)
 
-    // Check if MetaMask or Web3 provider is available
     if (!window.ethereum) {
       return {
         success: false,
@@ -25,9 +47,13 @@ export async function deployContractWithUserWallet(
       }
     }
 
-    // Get the provider from MetaMask
+    // Always use MetaMask's provider - it handles RPC automatically
     const provider = new ethers.BrowserProvider(window.ethereum)
-    console.log('✅ [Frontend Deploy] Provider connected')
+    console.log('✅ [Frontend Deploy] Using MetaMask provider')
+
+    // Verify we're using MetaMask's connection
+    const connection = await provider._detectNetwork()
+    console.log('🔵 [Frontend Deploy] Connected via MetaMask to chainId:', connection.chainId)
 
     // Get the current network
     const currentNetwork = await provider.getNetwork()
@@ -59,15 +85,20 @@ export async function deployContractWithUserWallet(
         })
         console.log('✅ [Frontend Deploy] Network switched')
       } catch (switchError: any) {
-        if (switchError.code === 4902) {
+        if (switchError.code === 4902 && network === 'polygon-amoy') {
+          // Network not added, add it
+          console.log('🟡 [Frontend Deploy] Adding Polygon Amoy network...')
+          await ensurePolygonAmoyNetwork()
+          console.log('✅ [Frontend Deploy] Network added, switching...')
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x13882' }],
+          })
+        } else {
           return {
             success: false,
-            error: `Please add ${network} to your wallet manually`,
+            error: `Failed to switch network: ${switchError.message}`,
           }
-        }
-        return {
-          success: false,
-          error: `Failed to switch network: ${switchError.message}`,
         }
       }
     }
@@ -88,21 +119,54 @@ export async function deployContractWithUserWallet(
         error: 'Insufficient balance. Please get testnet tokens from the faucet.',
       }
     }
-
-    // Create contract factory and deploy
-    console.log('🟡 [Frontend Deploy] Creating contract factory...')
-    console.log('📦 [Frontend Deploy] Bytecode length:', bytecode.length)
-    console.log('📦 [Frontend Deploy] ABI items:', abi.length)
     
     const factory = new ethers.ContractFactory(abi, bytecode, signer)
 
     console.log('🟡 [Frontend Deploy] Deploying contract (this may take a moment)...')
-    const contract = await factory.deploy()
-    console.log('✅ [Frontend Deploy] Contract deployed, tx hash:', contract.deploymentTransaction()?.hash)
+
+    // Polygon Amoy needs explicit gas settings
+    const deployOptions: any = {}
+
+    if (network === 'polygon-amoy') {
+      deployOptions.gasLimit = 800000
+      deployOptions.maxFeePerGas = ethers.parseUnits('100', 'gwei')
+      deployOptions.maxPriorityFeePerGas = ethers.parseUnits('30', 'gwei')
+      console.log('⚙️ [Frontend Deploy] Using Polygon Amoy gas settings')
+    }
+
+    const contract = await factory.deploy(deployOptions)
+    const deployTx = contract.deploymentTransaction()
+    console.log('✅ [Frontend Deploy] Contract deployed, tx hash:', deployTx?.hash)
 
     console.log('🟡 [Frontend Deploy] Waiting for confirmation...')
-    await contract.waitForDeployment()
-    console.log('✅ [Frontend Deploy] Deployment confirmed')
+    try {
+      // Wait for deployment with timeout (60 seconds)
+      await Promise.race([
+        contract.waitForDeployment(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Deployment confirmation timeout')), 60000)
+        )
+      ])
+      console.log('✅ [Frontend Deploy] Deployment confirmed')
+    } catch (error: any) {
+      if (error.message.includes('timeout')) {
+        // If timeout but we have tx hash, try to get contract address from tx
+        console.log('⚠️ [Frontend Deploy] Confirmation timeout, fetching from transaction...')
+        if (deployTx?.hash) {
+          const receipt = await provider.waitForTransaction(deployTx.hash, 1, 60000)
+          if (receipt && receipt.contractAddress) {
+            console.log('✅ [Frontend Deploy] Contract address retrieved from receipt')
+            // Continue with receipt data
+          } else {
+            throw new Error('Could not confirm deployment. Please check the transaction hash on the explorer.')
+          }
+        } else {
+          throw error
+        }
+      } else {
+        throw error
+      }
+    }
 
     const contractAddress = await contract.getAddress()
     const txHash = contract.deploymentTransaction()?.hash

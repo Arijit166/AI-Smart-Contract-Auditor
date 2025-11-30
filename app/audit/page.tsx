@@ -64,6 +64,7 @@ export default function AuditPage() {
       }
       
       const data = await response.json()
+      
       const auditResultsData = {
         ...data.audit,
         rawOutput: JSON.stringify(data, null, 2)
@@ -71,15 +72,17 @@ export default function AuditPage() {
       setAuditResults(auditResultsData)
 
       // ✅ SAVE AUDIT DATA TO CONTEXT
-      setAuditData({
+      const dataToSave = {
         originalCode: code,
         fixedCode: data.audit.fixedCode || code,
         riskScore: data.audit.riskScore || 0,
         vulnerabilities: data.audit.vulnerabilities || [],
-        suggestions: data.audit.suggestions || [],
+        suggestions: data.audit.suggestions || [], // This should have data
         contractName: data.audit.contractName || 'Contract',
         timestamp: Date.now()
-      })
+      }
+      
+      setAuditData(dataToSave)
 
       // Save to database
       if (account?.address) {

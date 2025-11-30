@@ -163,19 +163,22 @@ export default function DeployPage() {
     setError(null)
 
     try {
+      const payload = {
+        network: selectedNetwork,
+        userAddress: account.address,
+        originalCode: auditData.originalCode,
+        fixedCode: auditData.fixedCode,
+        auditData: {
+          riskScore: auditData.riskScore,
+          vulnerabilities: auditData.vulnerabilities,
+          suggestions: auditData.suggestions || [],
+        },
+      }
+      
       const response = await fetch('/api/onchain/mint-certificate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          network: selectedNetwork,
-          userAddress: account.address,
-          originalCode: auditData.originalCode,
-          fixedCode: auditData.fixedCode,
-          auditData: {
-            riskScore: auditData.riskScore,
-            vulnerabilities: auditData.vulnerabilities,
-          },
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await response.json()
@@ -207,20 +210,14 @@ export default function DeployPage() {
       const originalCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.originalCode))
       const fixedCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.fixedCode))
 
-      console.log('🔵 Publishing with hashes:', {
-        originalCodeHash,
-        fixedCodeHash,
-        contractAddress: deploymentAddress
-      })
-
       const response = await fetch('/api/onchain/publish-audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           network: selectedNetwork,
           contractAddress: deploymentAddress,
-          originalCodeHash: originalCodeHash,  // ✅ Now it's bytes32 (0x1234...)
-          fixedCodeHash: fixedCodeHash,        // ✅ Now it's bytes32 (0x1234...)
+          originalCodeHash: originalCodeHash,  
+          fixedCodeHash: fixedCodeHash,        
           riskScore: auditData.riskScore,
           ipfsPdfCID: nftResult.ipfs.pdfCID,
           ipfsCodeCID: nftResult.ipfs.fixedCodeCID,
@@ -425,8 +422,8 @@ export default function DeployPage() {
                 Deploy Another Contract
               </Button>
               {/* NFT & On-Chain Publishing Section */}
-              {deploymentAddress && auditData && (
-                <Card className="glass-effect border-border p-6 space-y-4">
+              {auditData && (
+                <div className="pt-4 border-t border-border space-y-4 mt-4">
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-foreground">Certificate & On-Chain Publishing</h3>
                     <p className="text-sm text-foreground/60">
@@ -523,7 +520,7 @@ export default function DeployPage() {
                       </p>
                     </div>
                   )}
-                </Card>
+                </div>
               )}
             </Card>
           ) : null}
