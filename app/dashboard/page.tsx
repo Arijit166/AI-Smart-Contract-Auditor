@@ -18,13 +18,6 @@ export default function Home() {
         </div>
 
         <div className="text-center mb-16">
-          {account && (
-            <div className="mb-8 px-4 py-3 rounded-lg bg-primary/10 border border-primary/30 inline-block">
-              <p className="text-sm text-primary font-semibold">
-                Welcome back! Connected to {account.address.slice(0, 6)}...{account.address.slice(-4)}
-              </p>
-            </div>
-          )}
 
           <div className="mb-8">
             <div className="inline-block">

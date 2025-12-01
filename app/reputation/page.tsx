@@ -13,6 +13,7 @@ export default function ReputationPage() {
   const [totalParticipants, setTotalParticipants] = useState<string>("0")
   const [loading, setLoading] = useState(true)
   const [selectedNetwork, setSelectedNetwork] = useState("polygon-amoy")
+  const [userBadges, setUserBadges] = useState<any[]>([])
 
   const networks = [
     { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -40,6 +41,17 @@ export default function ReputationPage() {
       if (leaderboardResult.success) {
         setLeaderboard(leaderboardResult.leaderboard || [])
         setTotalParticipants(leaderboardResult.totalParticipants || "0")
+      }
+      if (account?.address) {
+        try {
+          const badgeResponse = await fetch(`/api/badges/user?address=${account.address}&network=${selectedNetwork}`)
+          const badgeData = await badgeResponse.json()
+          if (badgeData.success) {
+            setUserBadges(badgeData.currentBadges || [])
+          }
+        } catch (e) {
+          console.log('Failed to load badges:', e)
+        }
       }
     } catch (error) {
       console.error("Failed to load reputation data:", error)
@@ -69,7 +81,7 @@ export default function ReputationPage() {
               <Trophy className="w-7 h-7 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-foreground pl-6">Reputation System</h1>
+              <h1 className="text-4xl font-bold text-foreground pl-17">Leaderboard</h1>
               <p className="text-foreground/60">Earn points for auditing, deploying, and fixing contracts</p>
             </div>
           </div>
@@ -184,6 +196,27 @@ export default function ReputationPage() {
                       )}
                     </div>
                   </Card>
+                   {userBadges.length > 0 && (
+                    <Card className="glass-effect border-border p-6 space-y-4">
+                      <h3 className="font-bold text-foreground flex items-center gap-2">
+                        <Award size={20} className="text-accent" />
+                        Your Badges ({userBadges.length})
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        {userBadges.slice(0, 4).map((badge: any, idx: number) => (
+                          <div key={idx} className="p-2 rounded-lg bg-card border border-border text-center">
+                            <p className="text-xs font-bold text-primary">{badge.badgeType}</p>
+                            <p className="text-xs text-foreground/60">{badge.level}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {userBadges.length > 4 && (
+                        <a href="/badges" className="text-xs text-primary hover:underline block text-center">
+                          View all {userBadges.length} badges →
+                        </a>
+                      )}
+                    </Card>
+                  )}
                 </>
               ) : (
                 <Card className="glass-effect border-border p-8 text-center">

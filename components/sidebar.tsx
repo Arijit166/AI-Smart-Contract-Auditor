@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Zap, Reply as Deploy, History, Settings, Menu, X, LogOut, Shield, Star } from "lucide-react"
+import { Home, Zap, Reply as Deploy, History, Settings, Menu, X, LogOut, Shield, Trophy, Award } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export default function Sidebar() {
@@ -17,7 +17,8 @@ export default function Sidebar() {
     { label: "Audit", icon: Zap, href: "/audit" },
     { label: "Deploy", icon: Deploy, href: "/deploy" },
     { label: "Verification", icon: Shield, href: "/verification" },
-    { label: "Reputation", icon: Star, href: "/reputation" },
+    { label: "Badges", icon: Award, href: "/badges" },
+    { label: "Leaderboard", icon: Trophy, href: "/reputation" },
     { label: "History", icon: History, href: "/history" },
     { label: "Accounts", icon: Settings, href: "/accounts" }, 
   ]

@@ -116,6 +116,28 @@ export default function DeployPage() {
       setShowCodeInput(false)
       if (account?.address) {
         await updateReputation('deployment', account.address, selectedNetwork)
+         try {
+          const badgeCheck = await fetch('/api/badges/check-eligibility', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              userAddress: account.address, 
+              network: selectedNetwork 
+            })
+          })
+          const badgeData = await badgeCheck.json()
+          
+          if (badgeData.success && badgeData.eligibleBadges?.length > 0) {
+            const badgeNames = badgeData.eligibleBadges.map((b: any) => b.badgeType).join(', ')
+            setTimeout(() => {
+              if (confirm(`🎉 You've unlocked new badges: ${badgeNames}!\n\nVisit Badges page to claim them?`)) {
+                window.open('/badges', '_blank')
+              }
+            }, 1500)
+          }
+        } catch (e) {
+          console.log('Badge check skipped:', e)
+        }
       }
     } catch (err: any) {
       setError(err.message || "Deployment error")

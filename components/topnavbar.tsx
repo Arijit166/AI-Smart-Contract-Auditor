@@ -8,9 +8,9 @@ export default function TopNavbar() {
 
   const getPageTitle = () => {
     if (profile?.name) {
-      return `Welcome back, ${profile.name}!`
+      return `Welcome, ${profile.name}!`
     }
-    return "Welcome back!"
+    return "Welcome!"
   }
 
   return (

@@ -110,7 +110,30 @@ export default function AuditPage() {
             auditResults: data.audit,
           }),
         });await updateReputation('audit', account.address, selectedNetwork)
-      }
+          try {
+            const badgeCheck = await fetch('/api/badges/check-eligibility', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                userAddress: account.address, 
+                network: selectedNetwork 
+              })
+            })
+            const badgeData = await badgeCheck.json()
+            
+            if (badgeData.success && badgeData.eligibleBadges?.length > 0) {
+              // Show notification that user earned new badges
+              const badgeNames = badgeData.eligibleBadges.map((b: any) => b.badgeType).join(', ')
+              setTimeout(() => {
+                if (confirm(`🎉 You're eligible for new badges: ${badgeNames}!\n\nGo to Badges page to mint them?`)) {
+                  router.push('/badges')
+                }
+              }, 1000)
+            }
+          } catch (e) {
+            console.log('Badge check skipped:', e)
+          }
+        }
     } catch (error) {
       console.error("Audit error:", error)
       alert("Audit failed. Please check if the backend is running.")
