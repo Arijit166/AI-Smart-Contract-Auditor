@@ -15,6 +15,7 @@ export interface Audit {
     description: string
     impact: string
     recommendation: string
+    fixed?:boolean
   }>
   suggestions: string[]
   fixedCode?: string
@@ -27,6 +28,11 @@ export interface Audit {
   ipfsMetadataCID?: string
   onChainPublished?: boolean
   onChainTxHash?: string
+  registeredOnChain?: boolean
+  registryNetwork?: string
+  registryTxHash?: string
+  contractHash?: string
+  auditIdHash?: string
 }
 
 export const AuditCollection = 'audits'

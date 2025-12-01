@@ -42,7 +42,9 @@ export async function POST(request: NextRequest) {
       .toArray()
 
     const badges = await db.collection(BadgeCollection)
-      .find({ userId: userAddress.toLowerCase(), network, isCurrent: true })
+      .find({ userId: userAddress.toLowerCase(), 
+        network: network, 
+        isCurrent: true })
       .toArray()
 
     // Calculate metrics
@@ -63,7 +65,8 @@ export async function POST(request: NextRequest) {
         if (networkConfig?.contractAddress && ethers.isAddress(userAddress)) {
           const provider = new ethers.JsonRpcProvider(networkConfig.rpc, undefined, {
             staticNetwork: true,
-            batchMaxCount: 1
+            batchMaxCount: 1,
+           
           })
           
           const contract = new ethers.Contract(
@@ -171,12 +174,13 @@ export async function POST(request: NextRequest) {
 
 function getVulnerabilityHunterTier(metrics: any): number {
   const total = metrics.totalVulnerabilities
-  const highPlus = metrics.criticalVulns + metrics.highVulns
+  const high = metrics.highVulns
+  const critical = metrics.criticalVulns  
   
-  if (total >= 100 && highPlus >= 30) return 5
-  if (total >= 50 && highPlus >= 15) return 4
-  if (total >= 30 && highPlus >= 10) return 3
-  if (total >= 15 && highPlus >= 5) return 2
+  if (total >= 100 && critical >= 10 && high >= 30) return 5  
+  if (total >= 50 && critical >= 5 && high >= 15) return 4   
+  if (total >= 30 && high >= 10) return 3
+  if (total >= 15 && high >= 5) return 2
   if (total >= 5) return 1
   return 0
 }
@@ -185,13 +189,13 @@ function getSecurityExpertTier(metrics: any): number {
   const fixes = metrics.totalFixes
   const critical = metrics.criticalVulns
   const high = metrics.highVulns
-  const totalCritHigh = critical + high
   
-  if (fixes >= 100 && critical >= 30 && totalCritHigh >= 70) return 5
-  if (fixes >= 50 && critical >= 15 && totalCritHigh >= 35) return 4
-  if (fixes >= 25 && critical >= 8 && totalCritHigh >= 17) return 3
-  if (fixes >= 10 && critical >= 3 && totalCritHigh >= 7) return 2
-  if (fixes >= 3 && critical >= 1 && totalCritHigh >= 2) return 1
+  // Contract checks EACH field separately - ALL must pass
+  if (fixes >= 100 && critical >= 30 && high >= 70) return 5
+  if (fixes >= 50 && critical >= 15 && high >= 35) return 4
+  if (fixes >= 25 && critical >= 8 && high >= 17) return 3
+  if (fixes >= 10 && critical >= 3 && high >= 7) return 2
+  if (fixes >= 3 && critical >= 1 && high >= 2) return 1  // Need 2 HIGH vulns, not total
   return 0
 }
 

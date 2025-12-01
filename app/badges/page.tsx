@@ -272,7 +272,7 @@ export default function BadgesPage() {
               {/* Eligible Badges */}
               {eligibleBadges.length > 0 && (
                 <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-2 pl-73">
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                     <Zap className="text-primary" />
                     Ready to Mint
                   </h2>
@@ -323,7 +323,7 @@ export default function BadgesPage() {
 
               {/* Current Badges */}
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2 pl-73">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                   <Trophy className="text-primary" />
                   Your Badges
                 </h2>

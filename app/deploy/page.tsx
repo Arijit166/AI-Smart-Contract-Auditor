@@ -231,22 +231,32 @@ export default function DeployPage() {
     setError(null)
 
     try {
-      // ✅ Calculate proper bytes32 hashes from the actual code
       const { ethers } = await import('ethers')
-      const originalCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.originalCode))
-      const fixedCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.fixedCode))
-
-      const response = await fetch('/api/onchain/publish-audit', {
+      
+      const response = await fetch('/api/registry/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          auditId: `audit-${deploymentAddress}-${Date.now()}`,
           network: selectedNetwork,
-          contractAddress: deploymentAddress,
-          originalCodeHash: originalCodeHash,  
-          fixedCodeHash: fixedCodeHash,        
+          contractCode: auditData.originalCode,
+          fixedCode: auditData.fixedCode,
+          llmOutput: JSON.stringify(auditData),
+          auditorAddress: account?.address || ethers.ZeroAddress,
           riskScore: auditData.riskScore,
-          ipfsPdfCID: nftResult.ipfs.pdfCID,
-          ipfsCodeCID: nftResult.ipfs.fixedCodeCID,
+          autoFixApplied: true,
+          vulnerabilities: (auditData.vulnerabilities || []).map((v: any) => ({
+            id: v.id || 0,
+            severity: v.severity || 'low',
+            title: v.title || 'Unknown',
+            line: v.line || 0,
+            description: v.description || '',
+            impact: v.impact || '',
+            recommendation: v.recommendation || '',
+            fixed: true
+          })),
+          ipfsReportCID: nftResult.ipfs.pdfCID,
+          ipfsFixedCodeCID: nftResult.ipfs.fixedCodeCID,
         }),
       })
 

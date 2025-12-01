@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       ipfsResult.metadataCID
     );
 
-    const receipt = await tx.wait();
+    const receipt = await tx.wait(1);
 
     // Parse event to get token ID
     const event = receipt.logs.find((log: any) => {
