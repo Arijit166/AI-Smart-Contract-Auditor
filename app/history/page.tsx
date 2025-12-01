@@ -12,17 +12,24 @@ export default function HistoryPage() {
   const [audits, setAudits] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [auditDetails, setAuditDetails] = useState<{ [key: string]: any }>({})
+  const [selectedNetwork, setSelectedNetwork] = useState("polygon-amoy")
+
+  const networks = [
+    { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
+    { id: "flow-testnet", name: "Flow Testnet", icon: "💚" },
+    { id: "celo-sepolia", name: "Celo Sepolia", icon: "🟡" },
+  ]
 
   useEffect(() => {
     if (account?.address) {
       fetchHistory()
     }
-  }, [account?.address])
+  }, [account?.address, selectedNetwork])
 
   const fetchHistory = async () => {
     try {
       const response = await fetch(
-        `/api/audit/history?userAddress=${account?.address}`
+        `/api/audit/history?userAddress=${account?.address}&network=${selectedNetwork}`
       )
       const data = await response.json()
       if (data.success) {
@@ -183,10 +190,25 @@ export default function HistoryPage() {
           <h1 className="text-3xl font-bold text-foreground pl-65">Audit & Deployment History</h1>
           <p className="text-foreground/60 mt-1 pl-74">View all your previous audits and deployments</p>
         </div>
-
+        <div className="flex gap-3 mb-6 pl-55">
+          {networks.map((network) => (
+            <button
+              key={network.id}
+              onClick={() => setSelectedNetwork(network.id)}
+              className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                selectedNetwork === network.id
+                  ? "border-primary bg-primary/10 glow-cyan"
+                  : "border-border hover:border-primary/50 bg-card"
+              }`}
+            >
+              <span className="mr-2">{network.icon}</span>
+              <span className="text-sm font-semibold">{network.name}</span>
+            </button>
+          ))}
+        </div>
         {audits.length === 0 ? (
           <Card className="glass-effect border-border p-8 text-center pl-50">
-            <p className="text-foreground/60">No audit history yet. Start by auditing a contract!</p>
+            <p className="text-foreground/60">No history yet. Start by auditing a contract!</p>
           </Card>
         ) : (
           <div className="space-y-4">

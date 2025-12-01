@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb'
 export interface Audit {
   _id?: ObjectId
   userId: string
+  network: string
   contractName: string
   contractCode: string
   riskScore: number

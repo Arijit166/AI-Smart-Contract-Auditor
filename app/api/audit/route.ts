@@ -5,9 +5,9 @@ import { AuditCollection } from '@/lib/models/Audit'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { contractCode, userAddress, auditResults } = body
+    const { contractCode, userAddress, auditResults, network } = body
 
-    if (!contractCode || !userAddress || !auditResults) {
+    if (!contractCode || !userAddress || !auditResults || !network) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     const existingAudit = await collection.findOne({
       userId: userAddress,
       contractCode: contractCode,
+      network: network,
     })
 
     if (existingAudit) {
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
     // Create new audit if doesn't exist
     const audit = {
       userId: userAddress,
+      network: network,
       contractName: extractContractName(contractCode) || 'UnnamedContract',
       contractCode,
       riskScore: auditResults.riskScore,

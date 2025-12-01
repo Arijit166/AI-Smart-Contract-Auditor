@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/db'
 import { AuditCollection } from '@/lib/models/Audit'
 import { BadgeCollection } from '@/lib/models/Badge'
+import { ethers } from 'ethers'
+
+const REPUTATION_ABI = [
+  "function getUserStats(address user) view returns (uint256 totalReputation, uint256 audits, uint256 deployments, uint256 fixes, uint256 penaltyCount)"
+]
+
+const NETWORKS: Record<string, { rpc: string, contractAddress: string }> = {
+  'polygon-amoy': {
+    rpc: 'https://rpc-amoy.polygon.technology',
+    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_POLYGON_AMOY || ''
+  },
+  'flow-testnet': {
+    rpc: 'https://testnet.evm.nodes.onflow.org',
+    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_FLOW_TESTNET || ''
+  },
+  'celo-sepolia': {
+    rpc: 'https://alfajores-forno.celo-testnet.org',
+    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_CELO_SEPOLIA || ''
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +35,10 @@ export async function POST(request: NextRequest) {
 
     // Get user's audit stats
     const audits = await db.collection(AuditCollection)
-      .find({ userId: userAddress.toLowerCase() })
+      .find({ 
+        userId: userAddress.toLowerCase(),
+        network: network
+      })
       .toArray()
 
     const badges = await db.collection(BadgeCollection)
@@ -34,28 +57,45 @@ export async function POST(request: NextRequest) {
         sum + (a.vulnerabilities?.filter((v: any) => v.severity === 'high').length || 0), 0),
     }
 
-    // Get reputation from on-chain or database
-    const reputationData = await db.collection('reputation')
-      .findOne({ address: userAddress.toLowerCase(), network })
-    
-    const reputation = reputationData?.totalReputation || 0
+       let reputation = 0
+      try {
+        const networkConfig = NETWORKS[network]
+        if (networkConfig?.contractAddress && ethers.isAddress(userAddress)) {
+          const provider = new ethers.JsonRpcProvider(networkConfig.rpc, undefined, {
+            staticNetwork: true,
+            batchMaxCount: 1
+          })
+          
+          const contract = new ethers.Contract(
+            networkConfig.contractAddress,
+            REPUTATION_ABI,
+            provider
+          )
 
-    // Check eligibility for each badge type
-    const eligibleBadges = []
-
-    // Vulnerability Hunter
-    const vulnTier = getVulnerabilityHunterTier(metrics)
-    if (vulnTier > 0) {
-      const currentVulnBadge = badges.find(b => b.badgeType === 'Vulnerability Hunter')
-      if (!currentVulnBadge || currentVulnBadge.tier < vulnTier) {
-        eligibleBadges.push({
-          badgeType: 'Vulnerability Hunter',
-          tier: vulnTier,
-          level: getTierLevel(vulnTier),
-          reason: `Found ${metrics.totalVulnerabilities} vulnerabilities`
-        })
+          const stats = await contract.getUserStats(userAddress)
+          reputation = parseInt(stats.totalReputation.toString())
+        }
+      } catch (err) {
+        console.error('Failed to fetch on-chain reputation:', err)
+        // reputation stays 0 if contract call fails
       }
-    }
+
+      // Check eligibility for each badge type
+      const eligibleBadges = []
+
+      // Vulnerability Hunter
+      const vulnTier = getVulnerabilityHunterTier(metrics)
+      if (vulnTier > 0) {
+        const currentVulnBadge = badges.find(b => b.badgeType === 'Vulnerability Hunter')
+        if (!currentVulnBadge || currentVulnBadge.tier < vulnTier) {
+          eligibleBadges.push({
+            badgeType: 'Vulnerability Hunter',
+            tier: vulnTier,
+            level: getTierLevel(vulnTier),
+            reason: `Found ${metrics.totalVulnerabilities} vulnerabilities`
+          })
+        }
+      }
 
     // Gas Optimizer
     // (Would need gas optimization tracking in audits)

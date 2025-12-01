@@ -108,6 +108,7 @@ export default function AuditPage() {
             contractCode: code,
             userAddress: account.address,
             auditResults: data.audit,
+            network: selectedNetwork,
           }),
         });await updateReputation('audit', account.address, selectedNetwork)
           try {

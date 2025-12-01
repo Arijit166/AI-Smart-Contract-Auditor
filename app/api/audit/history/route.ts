@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userAddress = searchParams.get('userAddress')
+    const network = searchParams.get('network')
 
     if (!userAddress) {
       return NextResponse.json(
@@ -21,13 +22,19 @@ export async function GET(request: NextRequest) {
 
     // Get all audits
     const audits = await auditsCollection
-      .find({ userId: userAddress })
+      .find({ 
+        userId: userAddress.toLowerCase(),
+        ...(network && { network }) 
+      })
       .sort({ createdAt: -1 })
       .toArray()
 
     // Get all deployments
     const deployments = await deploymentsCollection
-      .find({ userAddress })
+      .find({ 
+        userId: userAddress.toLowerCase(),
+        ...(network && { network }) 
+      })
       .sort({ createdAt: -1 })
       .toArray()
 
