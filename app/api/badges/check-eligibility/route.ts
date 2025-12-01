@@ -8,18 +8,21 @@ const REPUTATION_ABI = [
   "function getUserStats(address user) view returns (uint256 totalReputation, uint256 audits, uint256 deployments, uint256 fixes, uint256 penaltyCount)"
 ]
 
-const NETWORKS: Record<string, { rpc: string, contractAddress: string }> = {
+const NETWORKS: Record<string, { rpc: string, contractAddress: string, timeout: number }> = {
   'polygon-amoy': {
     rpc: 'https://rpc-amoy.polygon.technology',
-    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_POLYGON_AMOY || ''
+    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_POLYGON_AMOY || '',
+    timeout: 10000
   },
   'flow-testnet': {
     rpc: 'https://testnet.evm.nodes.onflow.org',
-    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_FLOW_TESTNET || ''
+    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_FLOW_TESTNET || '',
+    timeout: 10000
   },
   'celo-sepolia': {
     rpc: 'https://alfajores-forno.celo-testnet.org',
-    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_CELO_SEPOLIA || ''
+    contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_CELO_SEPOLIA || '',
+    timeout: 15000 // Longer timeout for Celo
   }
 }
 
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const db = await getDatabase()
 
-    // Get user's audit stats
+    // Get user's audit stats from database
     const audits = await db.collection(AuditCollection)
       .find({ 
         userId: userAddress.toLowerCase(),
@@ -41,13 +44,16 @@ export async function POST(request: NextRequest) {
       })
       .toArray()
 
-    const badges = await db.collection(BadgeCollection)
-      .find({ userId: userAddress.toLowerCase(), 
+    // Get user's CURRENT badges (not superseded ones)
+    const currentBadges = await db.collection(BadgeCollection)
+      .find({ 
+        userId: userAddress.toLowerCase(), 
         network: network, 
-        isCurrent: true })
+        isCurrent: true 
+      })
       .toArray()
 
-    // Calculate metrics
+    // Calculate metrics from audits
     const metrics = {
       totalAudits: audits.length,
       totalVulnerabilities: audits.reduce((sum, a) => sum + (a.vulnerabilities?.length || 0), 0),
@@ -59,97 +65,112 @@ export async function POST(request: NextRequest) {
         sum + (a.vulnerabilities?.filter((v: any) => v.severity === 'high').length || 0), 0),
     }
 
-       let reputation = 0
-      try {
-        const networkConfig = NETWORKS[network]
-        if (networkConfig?.contractAddress && ethers.isAddress(userAddress)) {
-          const provider = new ethers.JsonRpcProvider(networkConfig.rpc, undefined, {
-            staticNetwork: true,
-            batchMaxCount: 1,
-           
-          })
-          
-          const contract = new ethers.Contract(
-            networkConfig.contractAddress,
-            REPUTATION_ABI,
-            provider
-          )
+    // Fetch on-chain reputation with timeout
+    let reputation = 0
+    try {
+      const networkConfig = NETWORKS[network]
+      if (networkConfig?.contractAddress && ethers.isAddress(userAddress)) {
+        const provider = new ethers.JsonRpcProvider(networkConfig.rpc, undefined, {
+          staticNetwork: true,
+          batchMaxCount: 1,
+        })
+        
+        const contract = new ethers.Contract(
+          networkConfig.contractAddress,
+          REPUTATION_ABI,
+          provider
+        )
 
-          const stats = await contract.getUserStats(userAddress)
-          reputation = parseInt(stats.totalReputation.toString())
-        }
-      } catch (err) {
-        console.error('Failed to fetch on-chain reputation:', err)
-        // reputation stays 0 if contract call fails
+        // Set timeout for contract call
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), networkConfig.timeout)
+        )
+        
+        const statsPromise = contract.getUserStats(userAddress)
+        const stats = await Promise.race([statsPromise, timeoutPromise]) as any
+        
+        reputation = parseInt(stats.totalReputation.toString())
       }
+    } catch (err) {
+      console.error('Failed to fetch on-chain reputation:', err)
+      // Continue with reputation = 0 if fetch fails
+    }
 
-      // Check eligibility for each badge type
-      const eligibleBadges = []
+    // Check eligibility for each badge type
+    const eligibleBadges = []
 
-      // Vulnerability Hunter
-      const vulnTier = getVulnerabilityHunterTier(metrics)
-      if (vulnTier > 0) {
-        const currentVulnBadge = badges.find(b => b.badgeType === 'Vulnerability Hunter')
-        if (!currentVulnBadge || currentVulnBadge.tier < vulnTier) {
-          eligibleBadges.push({
-            badgeType: 'Vulnerability Hunter',
-            tier: vulnTier,
-            level: getTierLevel(vulnTier),
-            reason: `Found ${metrics.totalVulnerabilities} vulnerabilities`
-          })
-        }
+    // Vulnerability Hunter - FIXED TIER LOGIC
+    const vulnTier = getVulnerabilityHunterTier(metrics)
+    if (vulnTier > 0) {
+      const currentVulnBadge = currentBadges.find(b => b.badgeType === 'Vulnerability Hunter')
+      const currentTier = currentVulnBadge?.tier || 0
+      
+      // Only show if user can upgrade to a HIGHER tier
+      if (vulnTier > currentTier) {
+        eligibleBadges.push({
+          badgeType: 'Vulnerability Hunter',
+          tier: vulnTier,
+          level: getTierLevel(vulnTier),
+          reason: `Found ${metrics.totalVulnerabilities} vulnerabilities (${metrics.criticalVulns} critical, ${metrics.highVulns} high)`
+        })
       }
+    }
 
-    // Gas Optimizer
-    // (Would need gas optimization tracking in audits)
-
-    // Security Expert
+    // Security Expert - FIXED TIER LOGIC
     const securityTier = getSecurityExpertTier(metrics)
     if (securityTier > 0) {
-      const currentSecurityBadge = badges.find(b => b.badgeType === 'Security Expert')
-      if (!currentSecurityBadge || currentSecurityBadge.tier < securityTier) {
+      const currentSecurityBadge = currentBadges.find(b => b.badgeType === 'Security Expert')
+      const currentTier = currentSecurityBadge?.tier || 0
+      
+      if (securityTier > currentTier) {
         eligibleBadges.push({
           badgeType: 'Security Expert',
           tier: securityTier,
           level: getTierLevel(securityTier),
-          reason: `Fixed ${metrics.totalFixes} critical/high vulnerabilities`
+          reason: `Fixed ${metrics.totalFixes} issues (${metrics.criticalVulns} critical, ${metrics.highVulns} high)`
         })
       }
     }
 
-    // Bug Fixer
+    // Bug Fixer - FIXED TIER LOGIC
     const bugFixerTier = getBugFixerTier(metrics)
     if (bugFixerTier > 0) {
-      const currentBugFixerBadge = badges.find(b => b.badgeType === 'Bug Fixer')
-      if (!currentBugFixerBadge || currentBugFixerBadge.tier < bugFixerTier) {
+      const currentBugFixerBadge = currentBadges.find(b => b.badgeType === 'Bug Fixer')
+      const currentTier = currentBugFixerBadge?.tier || 0
+      
+      if (bugFixerTier > currentTier) {
         eligibleBadges.push({
           badgeType: 'Bug Fixer',
           tier: bugFixerTier,
           level: getTierLevel(bugFixerTier),
-          reason: `Completed ${metrics.totalAudits} audits with fixes`
+          reason: `Completed ${metrics.totalAudits} audits`
         })
       }
     }
 
-    // Verified Auditor
+    // Verified Auditor - FIXED TIER LOGIC
     const verifiedTier = getVerifiedAuditorTier(reputation)
     if (verifiedTier > 0) {
-      const currentVerifiedBadge = badges.find(b => b.badgeType === 'Verified Auditor')
-      if (!currentVerifiedBadge || currentVerifiedBadge.tier < verifiedTier) {
+      const currentVerifiedBadge = currentBadges.find(b => b.badgeType === 'Verified Auditor')
+      const currentTier = currentVerifiedBadge?.tier || 0
+      
+      if (verifiedTier > currentTier) {
         eligibleBadges.push({
           badgeType: 'Verified Auditor',
           tier: verifiedTier,
-          level: `Level ${verifiedTier}`,
+          level: getTierLevel(verifiedTier),
           reason: `Reached ${reputation} reputation points`
         })
       }
     }
 
-    // Perfect Score
+    // Perfect Score - FIXED TIER LOGIC
     const perfectTier = getPerfectScoreTier(metrics)
     if (perfectTier > 0) {
-      const currentPerfectBadge = badges.find(b => b.badgeType === 'Perfect Score')
-      if (!currentPerfectBadge || currentPerfectBadge.tier < perfectTier) {
+      const currentPerfectBadge = currentBadges.find(b => b.badgeType === 'Perfect Score')
+      const currentTier = currentPerfectBadge?.tier || 0
+      
+      if (perfectTier > currentTier) {
         eligibleBadges.push({
           badgeType: 'Perfect Score',
           tier: perfectTier,
@@ -163,8 +184,8 @@ export async function POST(request: NextRequest) {
       success: true,
       metrics,
       reputation,
-      eligibleBadges,
-      currentBadges: badges
+      eligibleBadges, // Only shows badges user can actually upgrade to
+      currentBadges: currentBadges
     })
   } catch (error: any) {
     console.error('Check eligibility error:', error)
@@ -172,30 +193,39 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// FIXED: Vulnerability Hunter tier calculation
 function getVulnerabilityHunterTier(metrics: any): number {
   const total = metrics.totalVulnerabilities
   const high = metrics.highVulns
-  const critical = metrics.criticalVulns  
+  const critical = metrics.criticalVulns
   
-  if (total >= 100 && critical >= 10 && high >= 30) return 5  
-  if (total >= 50 && critical >= 5 && high >= 15) return 4   
+  // Tier 5: 100+ total, 10+ critical, 30+ high
+  if (total >= 100 && critical >= 10 && high >= 30) return 5
+  // Tier 4: 50+ total, 5+ critical, 15+ high  
+  if (total >= 50 && critical >= 5 && high >= 15) return 4
+  // Tier 3: 30+ total, 10+ high
   if (total >= 30 && high >= 10) return 3
+  // Tier 2: 15+ total, 5+ high
   if (total >= 15 && high >= 5) return 2
+  // Tier 1: 5+ total
   if (total >= 5) return 1
+  
   return 0
 }
 
+// FIXED: Security Expert tier calculation
 function getSecurityExpertTier(metrics: any): number {
   const fixes = metrics.totalFixes
   const critical = metrics.criticalVulns
   const high = metrics.highVulns
   
-  // Contract checks EACH field separately - ALL must pass
+  // ALL conditions must be met for each tier
   if (fixes >= 100 && critical >= 30 && high >= 70) return 5
   if (fixes >= 50 && critical >= 15 && high >= 35) return 4
   if (fixes >= 25 && critical >= 8 && high >= 17) return 3
   if (fixes >= 10 && critical >= 3 && high >= 7) return 2
-  if (fixes >= 3 && critical >= 1 && high >= 2) return 1  // Need 2 HIGH vulns, not total
+  if (fixes >= 3 && critical >= 1 && high >= 2) return 1
+  
   return 0
 }
 

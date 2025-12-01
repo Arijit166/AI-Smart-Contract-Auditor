@@ -351,9 +351,6 @@ export default function BadgesPage() {
                             </div>
                             <div>
                               <h3 className="font-bold text-foreground text-lg mb-1">{badge.badgeType}</h3>
-                              <p className="text-xs text-foreground/60 mb-2">
-                                Token ID: #{badge.tokenId}
-                              </p>
                               <p className="text-xs text-foreground/60">
                                 Minted: {new Date(badge.mintedAt).toLocaleDateString()}
                               </p>

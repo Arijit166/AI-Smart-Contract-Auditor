@@ -12,8 +12,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Mint NFT on-chain
-    const mintResult = await mintBadgeNFT({
+    // Check if user already has this exact badge
+    const db = await getDatabase()
+    const existingBadge = await db.collection(BadgeCollection).findOne({
+      userId: userAddress.toLowerCase(),
+      badgeType,
+      tier,
+      network,
+      isCurrent: true
+    })
+
+    if (existingBadge) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `You already have ${badgeType} ${level}` 
+      }, { status: 400 })
+    }
+
+    // Mint NFT on-chain with increased timeout for Celo
+    const timeoutMs = network === 'celo-sepolia' ? 30000 : 20000
+    
+    const mintPromise = mintBadgeNFT({
       userAddress,
       badgeType,
       tier,
@@ -24,13 +43,17 @@ export async function POST(request: NextRequest) {
       reputation
     })
 
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Minting timeout - transaction may still be pending')), timeoutMs)
+    )
+
+    const mintResult = await Promise.race([mintPromise, timeoutPromise]) as any
+
     if (!mintResult.success) {
       return NextResponse.json({ success: false, error: mintResult.error }, { status: 500 })
     }
 
     // Save to database
-    const db = await getDatabase()
-    
     // Mark old badge as superseded if exists
     await db.collection(BadgeCollection).updateMany(
       { userId: userAddress.toLowerCase(), badgeType, network, isCurrent: true },
@@ -67,6 +90,15 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Mint badge error:', error)
+    
+    // Better error message for timeout
+    if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Network timeout - please try again or switch to a different network' 
+      }, { status: 500 })
+    }
+    
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 }

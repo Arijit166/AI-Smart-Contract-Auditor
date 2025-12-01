@@ -116,7 +116,8 @@ export default function DeployPage() {
       setShowCodeInput(false)
       if (account?.address) {
         await updateReputation('deployment', account.address, selectedNetwork)
-         try {
+        
+        try {
           const badgeCheck = await fetch('/api/badges/check-eligibility', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -127,16 +128,24 @@ export default function DeployPage() {
           })
           const badgeData = await badgeCheck.json()
           
+          // ✅ FIX: Only show notification if there are ACTUALLY eligible badges
           if (badgeData.success && badgeData.eligibleBadges?.length > 0) {
-            const badgeNames = badgeData.eligibleBadges.map((b: any) => b.badgeType).join(', ')
+            // Format badge names
+            const badgeNames = badgeData.eligibleBadges
+              .map((b: any) => `${b.badgeType} (${b.level})`)
+              .join(', ')
+            
+            // Show notification after slight delay
             setTimeout(() => {
-              if (confirm(`🎉 You've unlocked new badges: ${badgeNames}!\n\nVisit Badges page to claim them?`)) {
+              if (confirm(`🎉 You've unlocked new badge upgrades: ${badgeNames}!\n\nVisit Badges page to claim them?`)) {
                 window.open('/badges', '_blank')
               }
             }, 1500)
           }
+          // ✅ If eligibleBadges is empty, DON'T show any notification
         } catch (e) {
           console.log('Badge check skipped:', e)
+          // Silent fail - don't show error to user
         }
       }
     } catch (err: any) {
@@ -233,7 +242,33 @@ export default function DeployPage() {
     try {
       const { ethers } = await import('ethers')
       
-      const response = await fetch('/api/registry/register', {
+      // Compute hashes for on-chain verification
+      const originalCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.originalCode))
+      const fixedCodeHash = ethers.keccak256(ethers.toUtf8Bytes(auditData.fixedCode))
+      
+      // Step 1: Publish to blockchain for verification page
+      const onchainResponse = await fetch('/api/onchain/publish-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          network: selectedNetwork,
+          contractAddress: deploymentAddress,
+          originalCodeHash,
+          fixedCodeHash,
+          riskScore: auditData.riskScore,
+          ipfsPdfCID: nftResult.ipfs.pdfCID,
+          ipfsCodeCID: nftResult.ipfs.fixedCodeCID,
+        }),
+      })
+
+      const onchainData = await onchainResponse.json()
+      if (!onchainData.success) {
+        setError('Failed to publish on-chain: ' + onchainData.error)
+        return
+      }
+
+      // Step 2: Register in database for registry page
+      const registryResponse = await fetch('/api/registry/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -257,16 +292,25 @@ export default function DeployPage() {
           })),
           ipfsReportCID: nftResult.ipfs.pdfCID,
           ipfsFixedCodeCID: nftResult.ipfs.fixedCodeCID,
+          contractAddress: deploymentAddress, // Pass deployed contract address
         }),
       })
 
-      const data = await response.json()
-      if (data.success) {
-        setPublishResult(data)
-        setError(null)
-      } else {
-        setError('Failed to publish: ' + data.error)
+      const registryData = await registryResponse.json()
+      
+      // Set success result
+      setPublishResult({
+        transactionHash: onchainData.transactionHash,
+        registryContract: onchainData.registryContract,
+        network: onchainData.network,
+        registryStatus: registryData.success ? 'success' : 'warning'
+      })
+      
+      if (!registryData.success) {
+        console.warn('Registry update failed:', registryData.error || registryData.warning)
       }
+      
+      setError(null)
     } catch (err: any) {
       setError('Publish error: ' + err.message)
     } finally {

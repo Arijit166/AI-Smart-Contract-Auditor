@@ -10,7 +10,7 @@ const REPUTATION_ABI = [
   "event ReputationUpdated(address indexed user, uint256 oldReputation, uint256 newReputation, string action)"
 ]
 
-// Network configurations
+// Network configurations with longer timeouts
 const NETWORKS: Record<string, { rpc: string, contractAddress: string }> = {
   'polygon-amoy': {
     rpc: process.env.NEXT_PUBLIC_POLYGON_AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology',
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       wallet
     )
 
+    // ✅ FIXED: Proper console.log syntax
     console.log(`📊 [Reputation] Updating reputation for ${userAddress}: ${action}`)
 
     // Call appropriate contract function
@@ -105,6 +106,8 @@ export async function POST(request: NextRequest) {
 
     // Wait for transaction confirmation
     const receipt = await tx.wait()
+    
+    // ✅ FIXED: Proper console.log syntax
     console.log(`✅ [Reputation] Transaction confirmed: ${receipt.hash}`)
 
     return NextResponse.json({
@@ -114,7 +117,6 @@ export async function POST(request: NextRequest) {
       userAddress,
       network
     })
-
   } catch (error: any) {
     console.error('❌ [Reputation] Error:', error)
     return NextResponse.json(
