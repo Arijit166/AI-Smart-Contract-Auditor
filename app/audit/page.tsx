@@ -92,11 +92,13 @@ export default function AuditPage() {
         vulnerabilities: data.audit.vulnerabilities || [],
         suggestions: data.audit.suggestions || [], 
         contractName: data.audit.contractName || 'Contract',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        merkleRoot: undefined as string | undefined,
+        auditId: undefined as string | undefined
       }
       
       setAuditData(dataToSave)
-
+     
       // Save to database
       if (account?.address) {
         await fetch("/api/audit", {
@@ -111,6 +113,44 @@ export default function AuditPage() {
             network: selectedNetwork,
           }),
         });await updateReputation('audit', account.address, selectedNetwork)
+          if (account?.address) {
+            const auditResponse = await fetch("/api/audit", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                contractCode: code,
+                userAddress: account.address,
+                auditResults: data.audit,
+                network: selectedNetwork,
+              }),
+            });
+            
+            const auditDbResult = await auditResponse.json()
+            const auditDbId = auditDbResult.auditId || `audit-${Date.now()}`
+            
+            await updateReputation('audit', account.address, selectedNetwork)
+            
+            // Merkle generation with captured audit ID
+            try {
+              const merkleResponse = await fetch("/api/merkle/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ auditId: auditDbId }),
+              })
+              const merkleData = await merkleResponse.json()
+              
+              if (merkleData.success) {
+                console.log('✅ Merkle tree generated:', merkleData.merkleRoot)
+                dataToSave.merkleRoot = merkleData.merkleRoot
+                dataToSave.auditId = auditDbId
+                setAuditData(dataToSave)
+              }
+            } catch (e) {
+              console.log('Merkle generation skipped:', e)
+            }
+          }
           try {
             const badgeCheck = await fetch('/api/badges/check-eligibility', {
               method: 'POST',
@@ -146,11 +186,11 @@ export default function AuditPage() {
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2 pl-84">Smart Contract Audit</h1>
-          <p className="text-foreground/60 pl-78">Upload and analyze your Solidity contracts for vulnerabilities</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Smart Contract Audit</h1>
+          <p className="text-foreground/60">Upload and analyze your Solidity contracts for vulnerabilities</p>
         </div>
-        <div className="flex gap-3 mb-6 pl-73">
+        <div className="flex gap-3 mb-6 justify-center">
           {networks.map((network) => (
             <button
               key={network.id}

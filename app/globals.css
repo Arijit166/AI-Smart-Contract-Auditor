@@ -147,3 +147,61 @@
 .code-highlight {
   background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
 }
+
+/* ===== Custom Scrollbar Matching the UI ===== */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: var(--background);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 8px;
+  border: 2px solid var(--secondary);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--accent), var(--primary));
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--background);
+}
+
+/* ===== SIDEBAR SCROLLBAR (Perfect Match to Your UI) ===== */
+
+aside nav::-webkit-scrollbar {
+  width: 8px;
+}
+
+aside nav::-webkit-scrollbar-track {
+  background: var(--sidebar);
+  border-radius: 8px;
+  border: 1px solid var(--sidebar-border);
+}
+
+aside nav::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 8px;
+  border: 2px solid var(--sidebar);
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.45);
+}
+
+aside nav::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--accent), var(--primary));
+  box-shadow: 0 0 18px rgba(0, 217, 255, 0.65);
+}
+
+aside nav::-webkit-scrollbar-corner {
+  background: var(--sidebar);
+}

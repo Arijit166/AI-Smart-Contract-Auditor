@@ -10,6 +10,8 @@ interface AuditData {
   suggestions: string[]
   contractName: string
   timestamp: number
+  merkleRoot?: string
+  auditId?: string
 }
 
 interface AuditContextType {

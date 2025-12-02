@@ -26,6 +26,7 @@ export default function DeployPage() {
   const [nftResult, setNftResult] = useState<any>(null)
   const [publishResult, setPublishResult] = useState<any>(null)
   const { auditData } = useAudit()
+  const [copiedAuditId, setCopiedAuditId] = useState(false)
 
   const networks = [
   { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -297,6 +298,26 @@ export default function DeployPage() {
       })
 
       const registryData = await registryResponse.json()
+
+      try {
+      const merkleStoreResponse = await fetch('/api/merkle/store-onchain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditId: `audit-${deploymentAddress}-${Date.now()}`,
+          merkleRoot: auditData.merkleRoot || '',
+          auditor: account?.address || '',
+          network: selectedNetwork
+        })
+      })
+      
+      const merkleStoreData = await merkleStoreResponse.json()
+      if (merkleStoreData.success) {
+        console.log('✅ Merkle proof stored on-chain')
+      }
+    } catch (e) {
+      console.log('Merkle on-chain storage skipped:', e)
+    }
       
       // Set success result
       setPublishResult({
@@ -447,6 +468,32 @@ export default function DeployPage() {
                   )}
                 </div>
               </div>
+
+              {auditData?.auditId && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-foreground">Audit ID</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={auditData.auditId}
+                      className="flex-1 bg-input border border-border rounded-lg px-4 py-3 text-foreground font-mono text-sm focus:outline-none"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(auditData.auditId!)
+                        setCopiedAuditId(true)
+                        setTimeout(() => setCopiedAuditId(false), 2000)
+                      }}
+                      className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
+                    >
+                      <Copy size={16} />
+                      {copiedAuditId ? "Copied!" : "Copy"}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Transaction Hash */}
               {transactionHash && (

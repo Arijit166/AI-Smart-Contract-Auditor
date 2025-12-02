@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
     const registryAudits = audits.map(audit => ({
       auditId: audit._id.toString(),
       contractHash: audit.contractHash || '',
+      merkleRoot: audit.merkleRoot || null,
       auditor: audit.userId,
       timestamp: Math.floor(new Date(audit.createdAt).getTime() / 1000),
       riskScore: audit.riskScore,

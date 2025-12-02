@@ -33,6 +33,16 @@ export interface Audit {
   registryTxHash?: string
   contractHash?: string
   auditIdHash?: string
+  merkleRoot?: string
+  merkleLeaves?: Array<{
+    type: 'vulnerability' | 'fix' | 'llm_output' | 'pdf_report'
+    data: string
+    hash: string
+  }>
+  merkleProofs?: { [hash: string]: string[] }
+  merkleGeneratedAt?: Date
+  merkleStoredOnChain?: boolean
+  merkleOnChainTxHash?: string
 }
 
 export const AuditCollection = 'audits'

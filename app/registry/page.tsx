@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Database, Shield, AlertCircle, ExternalLink, Search, Filter, Loader } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Database, Shield, CheckCircle, ExternalLink, Search, Filter, Loader } from "lucide-react"
 
 interface RegistryAudit {
   auditId: string
@@ -20,6 +19,7 @@ interface RegistryAudit {
   }
   ipfsReportCID: string
   network: string
+  merkleRoot?: string
 }
 
 export default function RegistryPage() {
@@ -260,7 +260,19 @@ export default function RegistryPage() {
                             </div>
                           </div>
                         </div>
-
+                       
+                        {audit.merkleRoot && (
+                          <div className="pt-3 border-t border-border flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Shield size={16} className="text-purple-400" />
+                              <span className="text-sm text-foreground/60">Cryptographic Proof</span>
+                            </div>
+                            <span className="text-sm font-semibold text-purple-400 flex items-center gap-1">
+                              <CheckCircle size={14} />
+                              Verified
+                            </span>
+                          </div>
+                        )}
                         {/* Actions */}
                         {audit.ipfsReportCID && (
                         <a 

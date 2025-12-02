@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Zap, Reply as Deploy, History, Settings, Menu, X, LogOut, Shield, Trophy, Award, Database } from "lucide-react"
+import { Home, Zap, Reply as Deploy, Fingerprint, Settings, Menu, X, LogOut, Shield, Trophy, Award, Database } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export default function Sidebar() {
@@ -18,9 +18,9 @@ export default function Sidebar() {
     { label: "Deploy", icon: Deploy, href: "/deploy" },
     { label: "Registry", icon: Database, href: "/registry" },
     { label: "Verification", icon: Shield, href: "/verification" },
+    { label: "Audit Proof", icon: Fingerprint, href: "/merkle-proof" },
     { label: "Badges", icon: Award, href: "/badges" },
     { label: "Leaderboard", icon: Trophy, href: "/reputation" },
-    { label: "History", icon: History, href: "/history" },
     { label: "Accounts", icon: Settings, href: "/accounts" }, 
   ]
 
@@ -68,7 +68,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)

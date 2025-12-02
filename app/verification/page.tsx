@@ -149,7 +149,33 @@ export default function VerificationPage() {
             </div>
           </Card>
         )}
+        {result && result.isAudited && result.audit.merkleRoot && (
+          <Card className="glass-effect border-purple-500/50 border-2 p-6 space-y-4 mt-6">
+            <div className="flex items-center gap-3 text-purple-400">
+              <Shield size={24} />
+              <h3 className="text-xl font-bold">Cryptographic Proof Available ✓</h3>
+            </div>
 
+            <p className="text-sm text-foreground/60">
+              This audit has been cryptographically verified using Merkle Tree proof
+            </p>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-foreground">Merkle Root Hash</label>
+              <div className="bg-input border border-border rounded-lg px-4 py-3 font-mono text-xs text-foreground break-all">
+                {result.audit.merkleRoot}
+              </div>
+            </div>
+
+            <a
+              href={`/merkle-proof?network=${network}&contract=${contractAddress}`}
+              className="flex items-center justify-center gap-2 p-4 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/50 transition-colors group"
+            >
+              <span className="font-semibold text-purple-400">Verify Merkle Proof On-Chain</span>
+              <ExternalLink size={16} className="text-purple-400 group-hover:scale-110 transition-transform" />
+            </a>
+          </Card>
+        )}
         {result && result.isAudited && (
           <Card className="glass-effect border-primary/50 border-2 p-6 space-y-6">
             {/* Success Header */}
