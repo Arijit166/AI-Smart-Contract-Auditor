@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase()
-
     // Get user's audit stats from database
     const audits = await db.collection(AuditCollection)
       .find({ 
