@@ -22,7 +22,7 @@ const NETWORKS: Record<string, { rpc: string, contractAddress: string, timeout: 
   'celo-sepolia': {
     rpc: 'https://alfajores-forno.celo-testnet.org',
     contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_CELO_SEPOLIA || '',
-    timeout: 15000 // Longer timeout for Celo
+    timeout: 15000
   }
 }
 
@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase()
-    // Get user's audit stats from database
     const audits = await db.collection(AuditCollection)
       .find({ 
         userId: userAddress.toLowerCase(),
@@ -43,7 +42,6 @@ export async function POST(request: NextRequest) {
       })
       .toArray()
 
-    // Get user's CURRENT badges (not superseded ones)
     const currentBadges = await db.collection(BadgeCollection)
       .find({ 
         userId: userAddress.toLowerCase(), 
@@ -52,7 +50,6 @@ export async function POST(request: NextRequest) {
       })
       .toArray()
 
-    // Calculate metrics from audits
     const metrics = {
       totalAudits: audits.length,
       totalVulnerabilities: audits.reduce((sum, a) => sum + (a.vulnerabilities?.length || 0), 0),
@@ -64,7 +61,6 @@ export async function POST(request: NextRequest) {
         sum + (a.vulnerabilities?.filter((v: any) => v.severity === 'high').length || 0), 0),
     }
 
-    // Fetch on-chain reputation with timeout
     let reputation = 0
     try {
       const networkConfig = NETWORKS[network]
@@ -80,7 +76,6 @@ export async function POST(request: NextRequest) {
           provider
         )
 
-        // Set timeout for contract call
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Timeout')), networkConfig.timeout)
         )
@@ -92,90 +87,142 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       console.error('Failed to fetch on-chain reputation:', err)
-      // Continue with reputation = 0 if fetch fails
     }
 
-    // Check eligibility for each badge type
     const eligibleBadges = []
 
-    // Vulnerability Hunter - FIXED TIER LOGIC
+    // Vulnerability Hunter
     const vulnTier = getVulnerabilityHunterTier(metrics)
     if (vulnTier > 0) {
       const currentVulnBadge = currentBadges.find(b => b.badgeType === 'Vulnerability Hunter')
       const currentTier = currentVulnBadge?.tier || 0
       
-      // Only show if user can upgrade to a HIGHER tier
       if (vulnTier > currentTier) {
-        eligibleBadges.push({
-          badgeType: 'Vulnerability Hunter',
-          tier: vulnTier,
-          level: getTierLevel(vulnTier),
-          reason: `Found ${metrics.totalVulnerabilities} vulnerabilities (${metrics.criticalVulns} critical, ${metrics.highVulns} high)`
-        })
+        const allVulnBadges = await db.collection(BadgeCollection)
+          .find({ 
+            userId: userAddress.toLowerCase(), 
+            network: network,
+            badgeType: 'Vulnerability Hunter',
+            tier: vulnTier
+          })
+          .toArray()
+        
+        if (allVulnBadges.length === 0) {
+          eligibleBadges.push({
+            badgeType: 'Vulnerability Hunter',
+            tier: vulnTier,
+            level: getTierLevel(vulnTier),
+            reason: `Found ${metrics.totalVulnerabilities} vulnerabilities (${metrics.criticalVulns} critical, ${metrics.highVulns} high)`
+          })
+        }
       }
     }
 
-    // Security Expert - FIXED TIER LOGIC
+    // Security Expert
     const securityTier = getSecurityExpertTier(metrics)
     if (securityTier > 0) {
       const currentSecurityBadge = currentBadges.find(b => b.badgeType === 'Security Expert')
       const currentTier = currentSecurityBadge?.tier || 0
       
       if (securityTier > currentTier) {
-        eligibleBadges.push({
-          badgeType: 'Security Expert',
-          tier: securityTier,
-          level: getTierLevel(securityTier),
-          reason: `Fixed ${metrics.totalFixes} issues (${metrics.criticalVulns} critical, ${metrics.highVulns} high)`
-        })
+        const allSecurityBadges = await db.collection(BadgeCollection)
+          .find({ 
+            userId: userAddress.toLowerCase(), 
+            network: network,
+            badgeType: 'Security Expert',
+            tier: securityTier
+          })
+          .toArray()
+        
+        if (allSecurityBadges.length === 0) {
+          eligibleBadges.push({
+            badgeType: 'Security Expert',
+            tier: securityTier,
+            level: getTierLevel(securityTier),
+            reason: `Fixed ${metrics.totalFixes} issues (${metrics.criticalVulns} critical, ${metrics.highVulns} high)`
+          })
+        }
       }
     }
 
-    // Bug Fixer - FIXED TIER LOGIC
+    // Bug Fixer
     const bugFixerTier = getBugFixerTier(metrics)
     if (bugFixerTier > 0) {
       const currentBugFixerBadge = currentBadges.find(b => b.badgeType === 'Bug Fixer')
       const currentTier = currentBugFixerBadge?.tier || 0
       
       if (bugFixerTier > currentTier) {
-        eligibleBadges.push({
-          badgeType: 'Bug Fixer',
-          tier: bugFixerTier,
-          level: getTierLevel(bugFixerTier),
-          reason: `Completed ${metrics.totalAudits} audits`
-        })
+        const allBugFixerBadges = await db.collection(BadgeCollection)
+          .find({ 
+            userId: userAddress.toLowerCase(), 
+            network: network,
+            badgeType: 'Bug Fixer',
+            tier: bugFixerTier
+          })
+          .toArray()
+        
+        if (allBugFixerBadges.length === 0) {
+          eligibleBadges.push({
+            badgeType: 'Bug Fixer',
+            tier: bugFixerTier,
+            level: getTierLevel(bugFixerTier),
+            reason: `Completed ${metrics.totalAudits} audits`
+          })
+        }
       }
     }
 
-    // Verified Auditor - FIXED TIER LOGIC
+    // Verified Auditor
     const verifiedTier = getVerifiedAuditorTier(reputation)
     if (verifiedTier > 0) {
       const currentVerifiedBadge = currentBadges.find(b => b.badgeType === 'Verified Auditor')
       const currentTier = currentVerifiedBadge?.tier || 0
       
       if (verifiedTier > currentTier) {
-        eligibleBadges.push({
-          badgeType: 'Verified Auditor',
-          tier: verifiedTier,
-          level: getTierLevel(verifiedTier),
-          reason: `Reached ${reputation} reputation points`
-        })
+        const allVerifiedBadges = await db.collection(BadgeCollection)
+          .find({ 
+            userId: userAddress.toLowerCase(), 
+            network: network,
+            badgeType: 'Verified Auditor',
+            tier: verifiedTier
+          })
+          .toArray()
+        
+        if (allVerifiedBadges.length === 0) {
+          eligibleBadges.push({
+            badgeType: 'Verified Auditor',
+            tier: verifiedTier,
+            level: getTierLevel(verifiedTier),
+            reason: `Reached ${reputation} reputation points`
+          })
+        }
       }
     }
 
-    // Perfect Score - FIXED TIER LOGIC
+    // Perfect Score
     const perfectTier = getPerfectScoreTier(metrics)
     if (perfectTier > 0) {
       const currentPerfectBadge = currentBadges.find(b => b.badgeType === 'Perfect Score')
       const currentTier = currentPerfectBadge?.tier || 0
       
       if (perfectTier > currentTier) {
-        eligibleBadges.push({
-          badgeType: 'Perfect Score',
-          tier: perfectTier,
-          level: getTierLevel(perfectTier),
-          reason: `Achieved ${metrics.perfectScores} perfect scores`
-        })
+        const allPerfectBadges = await db.collection(BadgeCollection)
+          .find({ 
+            userId: userAddress.toLowerCase(), 
+            network: network,
+            badgeType: 'Perfect Score',
+            tier: perfectTier
+          })
+          .toArray()
+        
+        if (allPerfectBadges.length === 0) {
+          eligibleBadges.push({
+            badgeType: 'Perfect Score',
+            tier: perfectTier,
+            level: getTierLevel(perfectTier),
+            reason: `Achieved ${metrics.perfectScores} perfect scores`
+          })
+        }
       }
     }
 
@@ -183,7 +230,7 @@ export async function POST(request: NextRequest) {
       success: true,
       metrics,
       reputation,
-      eligibleBadges, // Only shows badges user can actually upgrade to
+      eligibleBadges,
       currentBadges: currentBadges
     })
   } catch (error: any) {
@@ -192,33 +239,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// FIXED: Vulnerability Hunter tier calculation
 function getVulnerabilityHunterTier(metrics: any): number {
   const total = metrics.totalVulnerabilities
   const high = metrics.highVulns
   const critical = metrics.criticalVulns
   
-  // Tier 5: 100+ total, 10+ critical, 30+ high
   if (total >= 100 && critical >= 10 && high >= 30) return 5
-  // Tier 4: 50+ total, 5+ critical, 15+ high  
   if (total >= 50 && critical >= 5 && high >= 15) return 4
-  // Tier 3: 30+ total, 10+ high
   if (total >= 30 && high >= 10) return 3
-  // Tier 2: 15+ total, 5+ high
   if (total >= 15 && high >= 5) return 2
-  // Tier 1: 5+ total
   if (total >= 5) return 1
   
   return 0
 }
 
-// FIXED: Security Expert tier calculation
 function getSecurityExpertTier(metrics: any): number {
   const fixes = metrics.totalFixes
   const critical = metrics.criticalVulns
   const high = metrics.highVulns
   
-  // ALL conditions must be met for each tier
   if (fixes >= 100 && critical >= 30 && high >= 70) return 5
   if (fixes >= 50 && critical >= 15 && high >= 35) return 4
   if (fixes >= 25 && critical >= 8 && high >= 17) return 3

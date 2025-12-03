@@ -17,6 +17,7 @@ export default function MerkleProofPage() {
   const [storing, setStoring] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [isStored, setIsStored] = useState(false)
+  const [verifiedLeaves, setVerifiedLeaves] = useState<Set<string>>(new Set())
 
   const networks = [
     { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -41,6 +42,7 @@ export default function MerkleProofPage() {
       const data = await response.json()
       if (data.success) {
         setMerkleData(data)
+        setVerifiedLeaves(new Set()) // Reset verified leaves for new audit
       } else {
         alert('Failed: ' + data.error)
       }
@@ -100,6 +102,10 @@ export default function MerkleProofPage() {
       const data = await response.json()
       if (data.success) {
         setVerificationResult(data)
+        // Add to verified leaves set
+        if (data.isValid) {
+          setVerifiedLeaves(prev => new Set(prev).add(selectedLeaf.hash))
+        }
       } else {
         alert('Failed: ' + data.error)
       }
@@ -109,6 +115,8 @@ export default function MerkleProofPage() {
       setVerifying(false)
     }
   }
+
+  const isLeafVerified = (leafHash: string) => verifiedLeaves.has(leafHash)
 
   return (
   <div className="min-h-screen bg-background p-6 md:p-8">
@@ -236,14 +244,19 @@ export default function MerkleProofPage() {
                     onChange={(e) => {
                       const leaf = merkleData.leaves.find((l: any) => l.hash === e.target.value)
                       setSelectedLeaf(leaf)
-                      setVerificationResult(null)
+                      // Check if this leaf was already verified
+                      if (leaf && isLeafVerified(leaf.hash)) {
+                        setVerificationResult({ isValid: true, transactionHash: 'cached' })
+                      } else {
+                        setVerificationResult(null)
+                      }
                     }}
                     className="w-full bg-input border border-border rounded-lg px-4 py-2 text-sm"
                   >
                     <option value="">Choose a leaf...</option>
                     {merkleData.leaves.map((leaf: any, idx: number) => (
                       <option key={idx} value={leaf.hash}>
-                        {leaf.type} - {leaf.hash.slice(0, 20)}...
+                        {leaf.type} - {leaf.hash.slice(0, 20)}... {isLeafVerified(leaf.hash) ? '✓' : ''}
                       </option>
                     ))}
                   </select>
@@ -260,13 +273,18 @@ export default function MerkleProofPage() {
 
                     <Button
                       onClick={handleVerifyLeaf}
-                      disabled={verifying}
-                      className="w-full bg-blue-500 hover:bg-blue-600 gap-2"
+                      disabled={verifying || isLeafVerified(selectedLeaf.hash)}
+                      className="w-full bg-blue-500 hover:bg-blue-600 gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {verifying ? (
                         <>
                           <Loader className="w-5 h-5 animate-spin" />
                           Verifying...
+                        </>
+                      ) : isLeafVerified(selectedLeaf.hash) ? (
+                        <>
+                          <CheckCircle size={20} />
+                          Already Verified ✓
                         </>
                       ) : (
                         <>
@@ -290,7 +308,9 @@ export default function MerkleProofPage() {
                         <p className={`font-semibold ${verificationResult.isValid ? 'text-green-500' : 'text-red-500'}`}>
                           {verificationResult.isValid ? 'Verification Successful' : 'Verification Failed'}
                         </p>
-                        <p className="text-xs text-foreground/60 mt-1">TX: {verificationResult.transactionHash?.slice(0, 20)}...</p>
+                        {verificationResult.transactionHash !== 'cached' && (
+                          <p className="text-xs text-foreground/60 mt-1">TX: {verificationResult.transactionHash?.slice(0, 20)}...</p>
+                        )}
                       </div>
                     </div>
                   </Card>
