@@ -1,137 +1,217 @@
 # 🔐 Smart Contract Auditor
 
-An end-to-end web platform that allows users to:
+An end-to-end, AI-powered smart contract security platform that enables users to:
 
-* **Sign in with MetaMask**
-* **Interactive Dashboard** 
-* **Upload or paste Solidity smart contract code**
-* **Run vulnerability analysis using LLM + Slither**
-* **Generate raw audit output, vulnerability reports, and auto-fixed Solidity code**
-* **Deploy auto-fixed contracts** to:
+- Authenticate with MetaMask
 
-  * Celo Sepolia
-  * Flow Testnet (EVM)
-  * Polygon Amoy
-* **View full audit & deployment history**, including:
+-  Access an interactive audit dashboard
 
-  * Audit PDF export (vulnerabilities + suggested fixes)
-  * Deployment transaction hash
-  * Contract address with direct block explorer link
-* **Manage accounts** including profile name + profile photo
-* **Backend Python microservice** for Slither + LLM processing
+-  Upload or paste Solidity code
 
----
+-  Run vulnerability analysis using LLM + Slither
+
+-  Generate vulnerability reports & auto-fixed Solidity code
+
+-  Deploy fixed contracts to:
+
+   -  Celo Sepolia
+
+   - Flow EVM Testnet
+
+   - Polygon Amoy
+
+-  Export audits as PDF
+
+-  Check deployment results via block explorer
+
+-  Manage account profile (name + photo)
+
+-  Backend Python microservice handles Slither + LLM
+
+-  Merkle-Proof Cryptographically Verified Audit Proofs
+
+-  Leaderboard Reputation System
+
+-  NFT Auditor Badges
+
+-  Audit Token + Subscription Manager
+
+-  On-chain Vulnerability Registry
 
 ## 🚀 Features
+- **MetaMask Authentication**
 
-### 1. **MetaMask Authentication**
+   Secure login with wallet-based identity. Easily track audits, badges, and on-chain scores.
 
-Users authenticate using MetaMask to access the platform and track audit/deployment activity.
+- **Smart Contract Audit (LLM + Slither)**
 
-### 2. **Smart Contract Audit (LLM + Slither)**
+  - Upload or paste Solidity code → backend automatically performs:
 
-Upload or paste Solidity code → backend runs:
+  - Static analysis via Slither
 
-* Static analysis with **Slither**
-* LLM-based vulnerability explanation
-* Auto-fixed Solidity code generation
-* Raw outputs stored for history
+  - LLM-based vulnerability explanation
 
-### 3. **Smart Contract Deployment Module**
+  - Auto-fixed, secure Solidity code
 
-Give corrected Solidity code → deploy to:
+  - Raw analysis used to create cryptographic audit proofs
 
-* **Celo Sepolia**
-* **Flow EVM Testnet**
-* **Polygon Amoy**
+-  **Merkle-Proof Audit Verification**
 
-Deployment results:
+    Every audit is converted into a cryptographically verifiable Merkle Tree, including:
 
-* Contract address
-* Transaction hash
-* Redirect links to relevant explorers
+     - Hash of each vulnerability
 
-### 4. **Audit & Deployment History**
+     - Hash of each fix
+ 
+     - Hash of raw LLM reasoning
 
-For each audit:
+      - Hash of generated PDF
 
-* View vulnerabilities
-* View auto-fixed code
-* Export PDF containing:
+   The Merkle Root is stored on-chain, proving:
 
-  * Vulnerabilities
-  * Suggestions
-  * Raw Slither output
+    -  ✔ Audit not tampered
+    -  ✔ Fixes are genuine
+    -  ✔ The audit PDF is verifiable
+    -  ✔ Every vulnerability has integrity
 
-For each deployment:
+-  **Smart Contract Deployment Module**
 
-* View contract address
-* View transaction hash
-* One-click open explorer link
+    Deploy auto-fixed contracts directly to:
 
-### 5. **Account Management Page**
+    - ⭐ Polygon Amoy
+ 
+    - 🌍 Celo Sepolia
 
-User can update:
+    - 🌕 Flow EVM Testnet
 
-* Profile name
-* Profile image
----
+    Deployment results include:
+
+    - Contract address
+
+    - Transaction hash
+      
+    - Audit ID
+
+    - Explorer redirect link
+
+-  **Vulnerability Registry (On-chain)**
+
+   Every discovered vulnerability is:
+
+   - Hashed
+
+   - Classified
+
+   - Stored on-chain
+
+   - Queryable by auditors/projects
+
+   - Used for ecosystem-wide tracking.
+
+- **Leaderboard Reputation System**
+
+  Each auditor receives:
+
+   - Reputation Points
+
+   - Streaks / Scores
+
+   - Leaderboard Position
+
+   Points increase based on:
+
+    - Verified audits
+
+    - Difficulty of vulnerabilities
+
+    - On-chain badge score
+
+-  **NFT Auditor Badges**
+
+   Auditors earn soulbound NFT badges based on performance:
+
+   - 🥉 Bronze
+ 
+   - 🥈 Silver
+
+   - 🥇 Gold
+
+    Badges are claimable after generating a verified audit.
+
+- **Subscription Manager**
+
+   Users can unlock premium features using:
+
+   - Subscription Contract
+
+    Features unlocked:
+
+    - Unlimited audits
+
+    - Larger contracts
+
+    - Premium badge tiers
+
+- **Account Management**
+
+   Users can update:
+
+   - Profile Name
+
+   - Profile Picture
+
+   Stored in the platform's database.
+
 ## 🔧 Environment Variables
-
-### **Backend/.env**
-
+**📁 backend/.env**
 ```
-NEXT_PUBLIC_POLYGON_AMOY_RPC=
-NEXT_PUBLIC_FLOW_TESTNET_RPC=
-NEXT_PUBLIC_CELO_SEPOLIA_RPC=
-PRIVATE_KEY=
+NEXT_PUBLIC_POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology/
+NEXT_PUBLIC_FLOW_TESTNET_RPC_URL=https://testnet.evm.nodes.onflow.org
+NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org/
+DEVELOPER_PRIVATE_KEY=(your private key)
 ```
 
-### **.env.local**
-
+**📁 .env.local**
 ```
-MONGODB_URI=
-GROQ_API_KEY=
+NEXT_PUBLIC_POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology/
+NEXT_PUBLIC_FLOW_TESTNET_RPC_URL=https://testnet.evm.nodes.onflow.org
+NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org/
+DEPLOYER_PRIVATE_KEY=(your private key)
+PINATA_API_KEY=
+PINATA_SECRET_KEY=
 ```
 
----
+**Add your NFTs, registry, merkle-proof, subscription contract addresses by deploying them to hardhat.**
 
-## ▶️ Backend Setup (Python)
-
-### Install dependencies
-
-```
+### ▶️ Backend Setup (Python)
+ **Install Dependencies**
+ ```
 pip install -r backend/requirements.txt
 ```
-
-### Start microservice
-
+### ▶️ Run the Microservice
 ```
 python backend/main.py
 ```
-
----
-
-## ▶️ Frontend Setup (Next.js)
-
-### Install
-
+### ▶️ Frontend Setup (Next.js)
 ```
 npm install
-```
-
-### Run
-
-```
 npm run dev
 ```
+  - Will run at - **http://localhost:3000**
+## 🔨 Deploying Smart Contracts (Hardhat)
+```
+cd contracts
+npx hardhat run scripts/<filename>.js --network <network-name>
+```
 
----
+- Example:
+```
+npx hardhat run scripts/deploy.js --network polygon_amoy
+```
+## 📝 License
 
-## 📝 License 
-This project is under the Apache 2.0 license
+Licensed under Apache 2.0.
 
 ## 🙌 Contributions
 
-PRs are welcome — feel free to improve audit accuracy, add new networks, or extend PDF generation.
-
+Pull Requests are welcome!
