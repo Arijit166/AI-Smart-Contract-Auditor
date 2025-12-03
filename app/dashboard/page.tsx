@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Shield, Zap, Cpu } from "lucide-react"
+import { ArrowRight, Shield, Zap, Cpu, Star, Crown } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export default function Home() {
@@ -34,20 +34,9 @@ export default function Home() {
           </h1>
 
           <p className="text-lg md:text-xl text-foreground/70 max-w-2xl mx-auto mb-12 text-pretty">
-            Upload a Solidity file, detect vulnerabilities, auto-fix issues, and deploy the safe version instantly.
-            Built for security engineers.
+            Upload a smart contract, detect vulnerabilities, generate auto-fixed code, verify Merkle-proof audit integrity, and publish on-chain.
+            Earn badges, gain reputation, subscribe for advanced tools, and access the decentralized vulnerability registry.
           </p>
-
-          <div className="flex flex-col md:flex-row gap-4 justify-center mb-16">
-            <Link href="/audit">
-              <Button
-                size="lg"
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground glow-cyan transition-all hover:scale-105"
-              >
-                Start Audit <ArrowRight size={20} />
-              </Button>
-            </Link>
-          </div>
         </div>
 
         {/* Features Grid */}
@@ -56,24 +45,59 @@ export default function Home() {
             {
               icon: Shield,
               title: "Detect Vulnerabilities",
-              description: "AI-powered analysis to find security issues in your smart contracts",
+              description: "AI-powered static analysis to catch high-risk issues instantly."
             },
             {
               icon: Zap,
               title: "Auto-Fix Issues",
-              description: "Automatically suggest and implement fixes for detected vulnerabilities",
+              description: "Automatically generate secure, upgraded versions of your contracts."
             },
             {
               icon: Cpu,
               title: "Deploy Safely",
-              description: "Deploy to testnet with confidence using your audited contracts",
+              description: "Deploy the AI-audited version directly to testnets with one click."
             },
+            {
+              icon: ArrowRight,
+              title: "Merkle Audit Proof",
+              description: "Generate cryptographically verifiable Merkle proofs for every audit."
+            },
+            {
+              icon: Star,
+              title: "NFT Audit Badges",
+              description: "Earn skill-based badges for auditing, fixing, and deploying smart contracts."
+            },
+            {
+              icon: Crown,
+              title: "Reputation & Leaderboard",
+              description: "Gain on-chain audit reputation and climb the global leaderboard."
+            },
+            {
+              icon: Zap,
+              title: "Subscription Access",
+              description: "Unlock advanced AI audits, faster fixes, and premium verification tools."
+            },
+            {
+              icon: Cpu,
+              title: "Vulnerability Registry",
+              description: "Store audit metadata on-chain and browse verified contract security history."
+            },
+            {
+              icon: Shield,
+              title: "On-Chain Verification",
+              description: "Publish audit results, fixes, and contract hashes immutably to the blockchain."
+            }
           ].map((feature, i) => {
             const Icon = feature.icon
             return (
               <div
                 key={i}
-                className="glass-effect p-6 rounded-lg border border-border hover:border-primary/50 transition-all hover:glow-cyan-sm"
+                className="
+                  glass-effect p-6 rounded-lg border border-border transition-all duration-300 
+                  hover:border-cyan-400/70 
+                  hover:shadow-[0_0_20px_4px_rgba(0,200,255,0.45)]
+                  hover:scale-[1.04]
+                "
               >
                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-primary" />

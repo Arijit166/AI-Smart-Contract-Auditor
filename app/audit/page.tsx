@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useAudit } from "@/lib/audit-context"
 import { useRouter } from "next/navigation"
 import { updateReputation } from "@/lib/services/reputation-service"
+import SubscriptionRequiredModal from "@/components/subscription-required-modal"
 
 export default function AuditPage() {
   const { account } = useAuth()
@@ -21,6 +22,7 @@ export default function AuditPage() {
   const [auditResults, setAuditResults] = useState(null)
   const [fileUploaded, setFileUploaded] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [showSubModal, setShowSubModal] = useState(false)
   const [selectedNetwork, setSelectedNetwork] = useState('polygon-amoy')
   const handleFileSelect = (file: File) => {
     if (file && file.name.endsWith(".sol")) {
@@ -49,6 +51,29 @@ export default function AuditPage() {
     if (!code.trim()) {
       alert("Please provide code to audit")
       return
+    }
+    
+    // ✅ Check subscription before auditing
+    if (account?.address) {
+      try {
+        const subResponse = await fetch(`/api/subscription/status?address=${account.address}&network=${selectedNetwork}`)
+        const subData = await subResponse.json()
+        
+        if (!subData.success || !subData.hasSubscription || subData.tier === 'NONE') {
+          setShowSubModal(true)
+          return
+        }
+        
+        if (subData.subscription && !subData.subscription.active) {
+          setShowSubModal(true)
+          return
+        }
+        
+      } catch (error) {
+        console.error('Failed to check subscription:', error)
+        alert('Failed to verify subscription status. Please try again.')
+        return
+      }
     }
     
     setIsAuditing(true)
@@ -294,6 +319,17 @@ export default function AuditPage() {
           </div>
         </div>
       </div>
+        {/* Subscription Modal */}
+        <SubscriptionRequiredModal
+          isOpen={showSubModal}
+          onClose={() => setShowSubModal(false)}
+          onSubscribe={() => {
+            setShowSubModal(false)
+            router.push('/subscription')
+          }}
+          message="You need an active subscription to run smart contract audits."
+          title="Subscription Required"
+        />
     </div>
   )
 }

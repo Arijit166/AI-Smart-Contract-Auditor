@@ -20,7 +20,7 @@ const NETWORKS: Record<string, { rpc: string, contractAddress: string, timeout: 
     timeout: 10000
   },
   'celo-sepolia': {
-    rpc: 'https://alfajores-forno.celo-testnet.org',
+    rpc: 'https://forno.celo-sepolia.celo-testnet.org/',
     contractAddress: process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_CELO_SEPOLIA || '',
     timeout: 15000
   }
@@ -258,22 +258,26 @@ function getSecurityExpertTier(metrics: any): number {
   const critical = metrics.criticalVulns
   const high = metrics.highVulns
   
+  // Stricter: must have significant fixes AND vulnerabilities found
   if (fixes >= 100 && critical >= 30 && high >= 70) return 5
   if (fixes >= 50 && critical >= 15 && high >= 35) return 4
-  if (fixes >= 25 && critical >= 8 && high >= 17) return 3
-  if (fixes >= 10 && critical >= 3 && high >= 7) return 2
-  if (fixes >= 3 && critical >= 1 && high >= 2) return 1
+  if (fixes >= 30 && critical >= 10 && high >= 20) return 3
+  if (fixes >= 20 && critical >= 6 && high >= 12) return 2
+  if (fixes >= 10 && critical >= 3 && high >= 6) return 1
   
   return 0
 }
 
 function getBugFixerTier(metrics: any): number {
   const audits = metrics.totalAudits
-  if (audits >= 120) return 5
-  if (audits >= 60) return 4
-  if (audits >= 30) return 3
-  if (audits >= 15) return 2
-  if (audits >= 5) return 1
+  const fixes = metrics.totalFixes
+  
+  // Requires completing audits WITH fixes applied
+  if (audits >= 120 && fixes >= 100) return 5
+  if (audits >= 60 && fixes >= 50) return 4
+  if (audits >= 30 && fixes >= 25) return 3
+  if (audits >= 20 && fixes >= 15) return 2
+  if (audits >= 10 && fixes >= 8) return 1
   return 0
 }
 

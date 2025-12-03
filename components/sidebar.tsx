@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Zap, Reply as Deploy, Fingerprint, Settings, Menu, Coins, X, LogOut, Trophy, Award, Database } from "lucide-react"
+import { Home, Zap, Reply as Deploy, Fingerprint, Settings, Menu, BadgeDollarSign, X, LogOut, Trophy, Award, Database } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export default function Sidebar() {
@@ -13,8 +13,8 @@ export default function Sidebar() {
   const { account, disconnectWallet } = useAuth()
 
   const navItems = [
-    { label: "Dashboard", icon: Home, href: "/" },
-    { label: "Subscription", icon: Coins, href: "/subscription" },
+    { label: "Dashboard", icon: Home, href: "/dashboard" },
+    { label: "Subscription", icon: BadgeDollarSign, href: "/subscription" },
     { label: "Audit", icon: Zap, href: "/audit" },
     { label: "Deploy", icon: Deploy, href: "/deploy" },
     { label: "Audit Proof", icon: Fingerprint, href: "/merkle-proof" },
@@ -24,7 +24,10 @@ export default function Sidebar() {
     { label: "Accounts", icon: Settings, href: "/accounts" }, 
   ]
 
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => {
+    const active = pathname === href
+    return active
+  }
 
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 

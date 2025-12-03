@@ -159,28 +159,36 @@ export default function AccountsPage() {
 
   const faqs = [
     {
-      question: "How does the smart contract auditor work?",
-      answer: "Our AI-powered auditor analyzes your Solidity code for common vulnerabilities, security issues, and best practices. It provides detailed reports with severity levels and recommendations."
+      question: "How does the AI smart contract auditing work?",
+      answer: "Our AI analyzes your uploaded Solidity contract, detects vulnerabilities, generates fixes, and produces a cryptographically verifiable audit proof using Merkle Trees."
     },
     {
-      question: "Is my contract code stored securely?",
-      answer: "Yes, all contract code and audit results are encrypted and stored securely in our database. Only you can access your audit history."
+      question: "What is the Audit Proof (Merkle Tree) feature?",
+      answer: "Each vulnerability, fix, and AI output is hashed independently and combined into a Merkle root stored on-chain. This proves your audit was not tampered with and ensures verifiable audit integrity."
+    },
+    {
+      question: "How does the Vulnerability Registry work?",
+      answer: "Every audit stores metadata on-chain including contract hash, issue types, severity, and fix status. Anyone can check whether a contract has been audited before and what issues were found."
+    },
+    {
+      question: "What are NFT Audit Badges?",
+      answer: "Auditors earn on-chain NFT badges such as Vulnerability Hunter, Bug Fixer, Gas Optimizer, or Level 1–5 Verified Auditor. These NFTs act as proof-of-skill and build your on-chain identity."
+    },
+    {
+      question: "How does the Reputation Leaderboard work?",
+      answer: "Auditors earn reputation for completing audits, safely deploying fixed contracts, and resolving high-risk issues. Reputation is fully on-chain, powering the public leaderboard."
+    },
+    {
+      question: "How do subscriptions work?",
+      answer: "Subscriptions unlock additional features such as more audits, faster AI analysis, priority deploys, advanced analytics, and on-chain audit proof generation depending on your chosen plan."
     },
     {
       question: "Can I deploy directly after auditing?",
-      answer: "Yes! After receiving your audit report, you can deploy your contract directly to supported testnets (Polygon Amoy, Flow Testnet, Celo Sepolia) using your connected wallet."
+      answer: "Yes, after the AI auto-fixes your contract, you can deploy it directly to supported testnets like Polygon Amoy, Celo Sepolia, and Flow Testnet. Deployment records are stored on-chain."
     },
     {
-      question: "What networks are supported?",
-      answer: "Currently we support Polygon Amoy, Flow Testnet, and Celo Sepolia testnets. Mainnet support is coming soon."
-    },
-    {
-      question: "How do I interpret the risk score?",
-      answer: "Risk scores range from 0-100. Low (0-39) means minimal issues, Medium (40-69) requires attention, and High (70-100) indicates critical vulnerabilities that must be fixed."
-    },
-    {
-      question: "Can I download audit reports?",
-      answer: "Yes, you can download comprehensive PDF reports of all your audits from the History page."
+      question: "Are my contracts and audit results secure?",
+      answer: "Yes. Your code, profile, and audit metadata are stored securely, and sensitive components like cryptographic proofs and registry entries are committed on-chain for tamper-proof verification."
     }
   ]
 
@@ -418,9 +426,14 @@ export default function AccountsPage() {
               This action cannot be undone. This will permanently delete your account and remove all your data including:
             </p>
             <ul className="list-disc list-inside text-sm text-foreground/60 space-y-1">
-              <li>Profile information</li>
-              <li>Audit history</li>
-              <li>Deployment records</li>
+              <li>Your profile information</li>
+              <li>Subscription status and billing history</li>
+              <li>Audit records and vulnerability reports</li>
+              <li>On-chain deployment logs</li>
+              <li>Generated audit proofs and Merkle roots</li>
+              <li>Vulnerability registry entries linked to your wallet</li>
+              <li>NFT Audit Badges and reputation points</li>
+              <li>Leaderboard rankings</li>
             </ul>
             <div className="flex gap-3 pt-4">
               <Button

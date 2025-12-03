@@ -22,9 +22,9 @@ const NETWORK_CONFIG: Record<string, { rpc: string, registryAddress: string, cha
     chainId: 545
   },
   'celo-sepolia': {
-    rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://alfajores-forno.celo-testnet.org',
+    rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org/',
     registryAddress: process.env.NEXT_PUBLIC_VULNERABILITY_REGISTRY_CELO_SEPOLIA || '',
-    chainId: 44787
+    chainId: 1142220
   }
 }
 

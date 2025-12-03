@@ -105,6 +105,71 @@ export default function SubscriptionPage() {
     }
   }
 
+  const networkChainIds: Record<string, string> = {
+    'polygon-amoy': '0x13882', // 80002 in hex
+    'flow-testnet': '0x221', // 545 in hex
+    'celo-sepolia': '0xAA044C' // 1142220 in hex
+  }
+
+  const switchNetwork = async (networkId: string) => {
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: networkChainIds[networkId] }],
+      })
+    } catch (error: any) {
+      // If network doesn't exist, try to add it
+      if (error.code === 4902) {
+        const networkParams: Record<string, any> = {
+          'polygon-amoy': {
+            chainId: '0x13882',
+            chainName: 'Polygon Amoy Testnet',
+            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+            rpcUrls: ['https://rpc-amoy.polygon.technology'],
+            blockExplorerUrls: ['https://amoy.polygonscan.com/']
+          },
+          'flow-testnet': {
+            chainId: '0x221',
+            chainName: 'Flow EVM Testnet',
+            nativeCurrency: { name: 'FLOW', symbol: 'FLOW', decimals: 18 },
+            rpcUrls: ['https://testnet.evm.nodes.onflow.org'],
+            blockExplorerUrls: ['https://evm-testnet.flowscan.io/']
+          },
+          'celo-sepolia': {
+            chainId: '0xAA044C',
+            chainName: 'Celo Alfajores',
+            nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+            rpcUrls: ['https://forno.celo-sepolia.celo-testnet.org/'],
+            blockExplorerUrls: ['https://sepolia.celoscan.io']
+          }
+        }
+        
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [networkParams[networkId]],
+          })
+        } catch (addError: any) {
+          // If it fails because network already exists with different RPC, just switch
+          if (addError.code === -32603 || addError.message?.includes('same RPC endpoint')) {
+            // Network exists, try switching again
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: networkChainIds[networkId] }],
+            })
+          } else {
+            throw addError
+          }
+        }
+      } else if (error.code === 4001) {
+        // User rejected
+        throw new Error('Please switch to the correct network to continue')
+      } else {
+        throw error
+      }
+    }
+  }
+
   const handleSubscribe = async (tier: string, price: number) => {
     if (!account?.address) {
       alert('Please connect your wallet')
@@ -113,10 +178,18 @@ export default function SubscriptionPage() {
 
     setSubscribing(tier)
     try {
+      // Switch to the selected network first
+      await switchNetwork(selectedNetwork)
+
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
 
       const addresses = contractAddresses[selectedNetwork]
+      
+      if (!addresses.token || !addresses.subscription) {
+        throw new Error(`Contract addresses not configured for ${selectedNetwork}`)
+      }
+
       const amount = ethers.parseEther(price.toString())
 
       // Approve token spending
@@ -156,9 +229,12 @@ export default function SubscriptionPage() {
       if (data.success) {
         alert('Subscription successful!')
         await loadSubscriptionStatus()
+      } else {
+        throw new Error(data.error || 'Failed to save subscription')
       }
     } catch (error: any) {
-      alert('Subscription failed: ' + error.message)
+      console.error('Subscription error:', error)
+      alert('Subscription failed: ' + (error.message || 'Unknown error'))
     } finally {
       setSubscribing(null)
     }
@@ -207,7 +283,7 @@ export default function SubscriptionPage() {
             return (
               <Card
                 key={tier.id}
-                className={`glass-effect p-8 relative ${
+                className={`glass-effect p-8 relative flex flex-col ${
                   tier.popular ? 'border-primary/50 border-2' : 'border-border'
                 }`}
               >
@@ -217,20 +293,20 @@ export default function SubscriptionPage() {
                   </div>
                 )}
 
-                <div className="text-center space-y-4">
+                <div className="text-center space-y-4 flex-grow flex flex-col">
                   <div className={`w-16 h-16 mx-auto rounded-lg bg-gradient-to-br ${tier.color} flex items-center justify-center`}>
                     <Icon className="w-8 h-8 text-white" />
                   </div>
 
                   <div>
                     <h3 className="text-2xl font-bold text-foreground">{tier.name}</h3>
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center justify-center gap-2">
                       <span className="text-4xl font-bold text-primary">{tier.price}</span>
-                      <span className="text-foreground/60 ml-2">AUDIT/month</span>
+                      <span className="text-foreground/60 text-sm">AUDIT/month</span>
                     </div>
                   </div>
 
-                  <ul className="space-y-3 text-left">
+                  <ul className="space-y-3 text-left flex-grow">
                     {tier.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm text-foreground/80">
                         <Check size={16} className="text-primary shrink-0 mt-0.5" />
@@ -242,7 +318,7 @@ export default function SubscriptionPage() {
                   <Button
                     onClick={() => handleSubscribe(tier.id, tier.price)}
                     disabled={isSubscribing || !account?.isConnected || currentSubscription?.tier === tier.id}
-                    className="w-full bg-primary hover:bg-primary/90 gap-2"
+                    className="w-full bg-primary hover:bg-primary/90 gap-2 mt-4"
                   >
                     {isSubscribing ? (
                       <>

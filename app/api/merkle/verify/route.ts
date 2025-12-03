@@ -44,7 +44,7 @@ function getNetworkConfig(network: string) {
       merkleContract: process.env.NEXT_PUBLIC_MERKLE_PROOF_FLOW_TESTNET,
     },
     'celo-sepolia': {
-      rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://alfajores-forno.celo-testnet.org',
+      rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org/',
       merkleContract: process.env.NEXT_PUBLIC_MERKLE_PROOF_CELO_SEPOLIA,
     },
   }

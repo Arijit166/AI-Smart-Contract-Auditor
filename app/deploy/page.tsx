@@ -9,6 +9,8 @@ import { compileContract } from "@/lib/services/compiler"
 import { deployContractWithUserWallet, getNetworkInfo } from "@/lib/services/frontendDeployer"
 import { useAudit } from "@/lib/audit-context"
 import { updateReputation } from "@/lib/services/reputation-service"
+import SubscriptionRequiredModal from "@/components/subscription-required-modal"
+import { useRouter } from "next/navigation"
 
 export default function DeployPage() {
   const { account } = useAuth()
@@ -27,6 +29,8 @@ export default function DeployPage() {
   const [publishResult, setPublishResult] = useState<any>(null)
   const { auditData } = useAudit()
   const [copiedAuditId, setCopiedAuditId] = useState(false)
+  const [showSubModal, setShowSubModal] = useState(false)
+  const router = useRouter()
 
   const networks = [
   { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -48,6 +52,27 @@ export default function DeployPage() {
 
     if (!account?.isConnected || !account?.address) {
       setError("Please connect your wallet first")
+      return
+    }
+
+    // ✅ Check subscription before deploying
+    try {
+      const subResponse = await fetch(`/api/subscription/status?address=${account.address}&network=${selectedNetwork}`)
+      const subData = await subResponse.json()
+      
+      if (!subData.success || !subData.hasSubscription || subData.tier === 'NONE') {
+        setShowSubModal(true)
+        return
+      }
+      
+      if (subData.subscription && !subData.subscription.active) {
+        setShowSubModal(true)
+        return
+      }
+      
+    } catch (error) {
+      console.error('Failed to check subscription:', error)
+      setError("Failed to verify subscription status. Please try again.")
       return
     }
 
@@ -671,6 +696,17 @@ export default function DeployPage() {
           ) : null}
         </div>
       </div>
+      {/* Subscription Modal */}
+      <SubscriptionRequiredModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        onSubscribe={() => {
+          setShowSubModal(false)
+          router.push('/subscription')
+        }}
+        message="You need an active subscription to deploy smart contracts."
+        title="Subscription Required"
+      />
     </div>
   )
 }

@@ -24,7 +24,7 @@ module.exports = {
       timeout: 60000
     },
     'celo-sepolia': {
-      url: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC || 'https://alfajores-forno.celo-testnet.org',
+      url: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC || 'https://forno.celo-sepolia.celo-testnet.org/',
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
       chainId: 11142220,
       timeout: 120000  // Increase to 120 seconds for Celo

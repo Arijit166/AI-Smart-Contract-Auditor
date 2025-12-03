@@ -6,8 +6,8 @@ import { ethers } from 'ethers'
 export async function POST(request: NextRequest) {
   try {
     const { userAddress, tier, network, transactionHash } = await request.json()
-
-    if (!userAddress || !tier || !network) {
+    
+    if (!userAddress || !tier || !network || !transactionHash) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -15,14 +15,29 @@ export async function POST(request: NextRequest) {
     const networkConfigs: Record<string, string> = {
       'polygon-amoy': 'https://rpc-amoy.polygon.technology',
       'flow-testnet': 'https://testnet.evm.nodes.onflow.org',
-      'celo-sepolia': 'https://alfajores-forno.celo-testnet.org'
+      'celo-sepolia': 'https://forno.celo-sepolia.celo-testnet.org/'
     }
 
-    const provider = new ethers.JsonRpcProvider(networkConfigs[network])
-    const receipt = await provider.getTransactionReceipt(transactionHash)
+    const rpcUrl = networkConfigs[network]
+    if (!rpcUrl) {
+      return NextResponse.json({ success: false, error: 'Invalid network' }, { status: 400 })
+    }
 
-    if (!receipt || receipt.status !== 1) {
-      return NextResponse.json({ success: false, error: 'Transaction failed or not found' }, { status: 400 })
+    const provider = new ethers.JsonRpcProvider(rpcUrl)
+    
+    try {
+      const receipt = await provider.getTransactionReceipt(transactionHash)
+      
+      if (!receipt) {
+        return NextResponse.json({ success: false, error: 'Transaction not found' }, { status: 400 })
+      }
+      
+      if (receipt.status !== 1) {
+        return NextResponse.json({ success: false, error: 'Transaction failed on-chain' }, { status: 400 })
+      }
+    } catch (txError) {
+      console.error('Transaction verification error:', txError)
+      return NextResponse.json({ success: false, error: 'Failed to verify transaction' }, { status: 400 })
     }
 
     // Calculate expiry (30 days from now)
@@ -30,19 +45,42 @@ export async function POST(request: NextRequest) {
     expiry.setDate(expiry.getDate() + 30)
 
     const db = await getDatabase()
-    const subscription = {
+    
+    // Check if user already has an active subscription for this network
+    const existingSubscription = await db.collection(SubscriptionCollection).findOne({
       userAddress: userAddress.toLowerCase(),
-      tier,
-      expiry,
-      subscribedAt: new Date(),
       network,
-      transactionHash,
-      active: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
+      expiry: { $gt: new Date() }
+    })
 
-    await db.collection(SubscriptionCollection).insertOne(subscription)
+    if (existingSubscription) {
+      // Update existing subscription
+      await db.collection(SubscriptionCollection).updateOne(
+        { _id: existingSubscription._id },
+        {
+          $set: {
+            tier,
+            expiry,
+            transactionHash,
+            updatedAt: new Date()
+          }
+        }
+      )
+    } else {
+      // Create new subscription
+      const subscription = {
+        userAddress: userAddress.toLowerCase(),
+        tier,
+        expiry,
+        subscribedAt: new Date(),
+        network,
+        transactionHash,
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      await db.collection(SubscriptionCollection).insertOne(subscription)
+    }
 
     return NextResponse.json({
       success: true,
@@ -54,6 +92,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Subscription error:', error)
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || 'Internal server error' 
+    }, { status: 500 })
   }
 }

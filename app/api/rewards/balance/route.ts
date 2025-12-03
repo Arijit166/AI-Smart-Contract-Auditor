@@ -14,7 +14,7 @@ const NETWORKS: Record<string, { rpc: string, tokenAddress: string }> = {
     tokenAddress: process.env.NEXT_PUBLIC_AUDIT_TOKEN_FLOW_TESTNET || ''
   },
   'celo-sepolia': {
-    rpc: 'https://alfajores-forno.celo-testnet.org',
+    rpc: 'https://forno.celo-sepolia.celo-testnet.org/',
     tokenAddress: process.env.NEXT_PUBLIC_AUDIT_TOKEN_CELO_SEPOLIA || ''
   }
 }

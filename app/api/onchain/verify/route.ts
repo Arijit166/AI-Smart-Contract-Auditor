@@ -100,7 +100,7 @@ function getNetworkConfig(network: string) {
       registryContract: process.env.NEXT_PUBLIC_REGISTRY_CONTRACT_FLOW_TESTNET,
     },
     'celo-sepolia': {
-      rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC || 'https://alfajores-forno.celo-testnet.org',
+      rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC || 'https://forno.celo-sepolia.celo-testnet.org/',
       registryContract: process.env.NEXT_PUBLIC_REGISTRY_CONTRACT_CELO_SEPOLIA,
     },
   };

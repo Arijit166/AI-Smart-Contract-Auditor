@@ -131,7 +131,7 @@ export async function mintBadgeNFT(params: {
     const rpcUrls: Record<string, string> = {
       'polygon-amoy': process.env.NEXT_PUBLIC_POLYGON_AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology',
       'flow-testnet': process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC_URL || 'https://testnet.evm.nodes.onflow.org',
-      'celo-sepolia': process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://alfajores-forno.celo-testnet.org'
+      'celo-sepolia': process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org/'
     }
 
     const provider = new ethers.JsonRpcProvider(rpcUrls[params.network])
