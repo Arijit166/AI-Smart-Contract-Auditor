@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Zap, Reply as Deploy, Fingerprint, Settings, Menu, X, LogOut, Shield, Trophy, Award, Database } from "lucide-react"
+import { Home, Zap, Reply as Deploy, Fingerprint, Settings, Menu, Coins, X, LogOut, Trophy, Award, Database } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export default function Sidebar() {
@@ -14,6 +14,7 @@ export default function Sidebar() {
 
   const navItems = [
     { label: "Dashboard", icon: Home, href: "/" },
+    { label: "Subscription", icon: Coins, href: "/subscription" },
     { label: "Audit", icon: Zap, href: "/audit" },
     { label: "Deploy", icon: Deploy, href: "/deploy" },
     { label: "Audit Proof", icon: Fingerprint, href: "/merkle-proof" },

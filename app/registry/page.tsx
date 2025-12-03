@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Database, Shield, CheckCircle, ExternalLink, Search, Filter, Loader } from "lucide-react"
+import { Database, Shield, CheckCircle, ExternalLink, Filter, Loader } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 interface RegistryAudit {
   auditId: string
@@ -28,6 +29,8 @@ export default function RegistryPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterRisk, setFilterRisk] = useState<string>("all")
+  const [userSubscription, setUserSubscription] = useState<any>(null)
+  const { account } = useAuth()
 
   const networks = [
     { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -44,6 +47,18 @@ export default function RegistryPage() {
     try {
       const response = await fetch(`/api/registry/list?network=${selectedNetwork}`)
       const data = await response.json()
+
+      if (account?.address) {
+        try {
+          const subResponse = await fetch(`/api/subscription/status?address=${account.address}&network=${selectedNetwork}`)
+          const subData = await subResponse.json()
+          if (subData.success && subData.hasSubscription) {
+            setUserSubscription(subData.subscription)
+          }
+        } catch (e) {
+          console.log('Subscription check skipped:', e)
+        }
+      }
       
       if (data.success) {
         setAudits(data.audits || [])
@@ -108,6 +123,23 @@ export default function RegistryPage() {
               </button>
             ))}
           </div>
+          {/* Subscription Status */}
+          {account?.isConnected && userSubscription && (
+            <Card className="glass-effect border-accent/50 border-2 p-4 max-w-md mx-auto">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-foreground/60">Active Subscription</p>
+                  <p className="text-xl font-bold text-accent">{userSubscription.tier}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-foreground/60">Expires</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {new Date(userSubscription.expiry).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
 
         {loading ? (

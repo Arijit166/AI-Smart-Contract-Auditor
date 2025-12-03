@@ -73,7 +73,23 @@ export default function MerkleProofPage() {
       if (data.success) {
         setIsStored(true)
         alert('Stored on-chain! TX: ' + data.transactionHash)
-      } else {
+        if (account?.address) {
+          try {
+            await fetch('/api/rewards/distribute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                auditorAddress: account.address,
+                amount: 3,
+                network: selectedNetwork,
+                reason: 'merkle_proof_storage'
+              })
+            })
+          } catch (e) {
+            console.log('Reward skipped:', e)
+          }
+        }
+      }else {
         alert('Failed: ' + data.error)
       }
     } catch (error: any) {

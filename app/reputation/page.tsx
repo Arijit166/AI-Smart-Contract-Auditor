@@ -4,7 +4,12 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Trophy, Star, Zap, Shield, TrendingUp, Award, Users } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getUserStats, getLeaderboard, type UserStats, type LeaderboardEntry } from "@/lib/services/reputation-service"
+import { getUserStats, getLeaderboard, type UserStats as BaseUserStats, type LeaderboardEntry } from "@/lib/services/reputation-service"
+
+interface UserStats extends BaseUserStats {
+  tokenBalance?: string
+  tokenRewards?: string
+}
 
 export default function ReputationPage() {
   const { account } = useAuth()
@@ -33,6 +38,19 @@ export default function ReputationPage() {
         const statsResult = await getUserStats(account.address, selectedNetwork)
         if (statsResult.success && statsResult.userStats) {
           setUserStats(statsResult.userStats)
+          try {
+            const tokenResponse = await fetch(`/api/rewards/balance?address=${account.address}&network=${selectedNetwork}`)
+            const tokenData = await tokenResponse.json()
+            if (tokenData.success) {
+              setUserStats((prev: UserStats | null) => prev ? {
+                ...prev,
+                tokenBalance: tokenData.balance,
+                tokenRewards: tokenData.totalRewards
+              } : null)
+            }
+          } catch (e) {
+            console.log('Token balance fetch skipped:', e)
+          }
         }
       }
 
@@ -128,6 +146,26 @@ export default function ReputationPage() {
                       <div className="pt-4 border-t border-border">
                         <p className="text-xs text-foreground/60">
                           {formatAddress(userStats.address)}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Token Balance Card */}
+                  <Card className="glass-effect border-accent/50 border-2 p-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center glow-cyan">
+                        <Award className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-foreground/60 font-semibold mb-1">AUDIT Tokens</p>
+                        <p className="text-5xl font-bold text-amber-500">
+                          {userStats?.tokenBalance ? parseFloat(userStats.tokenBalance).toFixed(2) : '0.00'}
+                        </p>
+                      </div>
+                      <div className="pt-4 border-t border-border">
+                        <p className="text-xs text-foreground/60">
+                          Total Earned: {userStats?.tokenRewards ? parseFloat(userStats.tokenRewards).toFixed(2) : '0.00'} AUDIT
                         </p>
                       </div>
                     </div>

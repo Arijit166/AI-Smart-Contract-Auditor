@@ -138,7 +138,28 @@ export default function BadgesPage() {
       if (data.success) {
         await loadBadges()
         await checkEligibility()
-        alert(`Badge minted successfully! Token ID: ${data.tokenId}`)
+         try {
+          const rewardAmount = badge.tier * 2 // Higher tier = more rewards
+          const rewardResponse = await fetch('/api/rewards/distribute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              auditorAddress: account.address,
+              amount: rewardAmount,
+              network: selectedNetwork,
+              reason: `badge_mint_${badge.badgeType}`
+            })
+          })
+          
+          const rewardData = await rewardResponse.json()
+          if (rewardData.success) {
+            alert(`🎉 Badge minted successfully!\n\nToken ID: ${data.tokenId}\n+${rewardAmount} AUDIT tokens earned!`)
+          } else {
+            alert(`Badge minted successfully! Token ID: ${data.tokenId}`)
+          }
+        } catch (e) {
+          alert(`Badge minted successfully! Token ID: ${data.tokenId}`)
+        }
       } else {
         alert(`Failed to mint badge: ${data.error}`)
       }

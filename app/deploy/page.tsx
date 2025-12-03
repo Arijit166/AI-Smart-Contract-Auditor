@@ -117,7 +117,25 @@ export default function DeployPage() {
       setShowCodeInput(false)
       if (account?.address) {
         await updateReputation('deployment', account.address, selectedNetwork)
-        
+        try {
+          const rewardResponse = await fetch('/api/rewards/distribute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              auditorAddress: account.address,
+              amount: 10, // 10 AUDIT tokens for deployment
+              network: selectedNetwork,
+              reason: 'deployment_success'
+            })
+          })
+          
+          const rewardData = await rewardResponse.json()
+          if (rewardData.success) {
+            console.log('✅ Deployment reward:', rewardData.amount, 'AUDIT')
+          }
+        } catch (e) {
+          console.log('Reward distribution skipped:', e)
+        }
         try {
           const badgeCheck = await fetch('/api/badges/check-eligibility', {
             method: 'POST',

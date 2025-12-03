@@ -131,7 +131,25 @@ export default function AuditPage() {
             const auditDbId = auditDbResult.auditId || `audit-${Date.now()}`
             
             await updateReputation('audit', account.address, selectedNetwork)
-            
+            try {
+              const rewardResponse = await fetch('/api/rewards/distribute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  auditorAddress: account.address,
+                  amount: 5, // 5 AUDIT tokens per audit
+                  network: selectedNetwork,
+                  reason: 'audit_completion'
+                })
+              })
+              
+              const rewardData = await rewardResponse.json()
+              if (rewardData.success) {
+                console.log('✅ Audit reward distributed:', rewardData.amount, 'AUDIT')
+              }
+            } catch (e) {
+              console.log('Reward distribution skipped:', e)
+            }
             // Merkle generation with captured audit ID
             try {
               const merkleResponse = await fetch("/api/merkle/generate", {
