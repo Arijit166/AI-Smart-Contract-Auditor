@@ -16,6 +16,7 @@ export default function MerkleProofPage() {
   const [loading, setLoading] = useState(false)
   const [storing, setStoring] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const [isStored, setIsStored] = useState(false)
 
   const networks = [
     { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -68,6 +69,7 @@ export default function MerkleProofPage() {
 
       const data = await response.json()
       if (data.success) {
+        setIsStored(true)
         alert('Stored on-chain! TX: ' + data.transactionHash)
       } else {
         alert('Failed: ' + data.error)
@@ -152,7 +154,7 @@ export default function MerkleProofPage() {
                 value={auditId}
                 onChange={(e) => setAuditId(e.target.value)}
                 placeholder="Enter audit ID..."
-                className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground"
+                className="w-full bg-input border border-border rounded-lg mt-2 px-4 py-3 text-foreground"
               />
             </div>
 
@@ -196,13 +198,18 @@ export default function MerkleProofPage() {
 
               <Button
                 onClick={handleStoreOnChain}
-                disabled={storing || !account?.isConnected}
-                className="w-full bg-green-500 hover:bg-green-600 gap-2"
+                disabled={storing || !account?.isConnected || isStored}
+                className="w-full bg-green-500 hover:bg-green-600 gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {storing ? (
                   <>
                     <Loader className="w-5 h-5 animate-spin" />
                     Storing...
+                  </>
+                ) : isStored ? (
+                  <>
+                    <CheckCircle size={20} />
+                    Stored On-Chain ✓
                   </>
                 ) : (
                   <>

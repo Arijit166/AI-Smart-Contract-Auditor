@@ -51,11 +51,12 @@ contract MerkleAuditProof is Ownable {
         emit AuditProofStored(auditId, auditor, merkleRoot, block.timestamp);
     }
 
-    function verifyLeaf(
+    // ✅ NEW: View function for checking verification without emitting event
+    function checkLeafValidity(
         string memory auditId,
         bytes32 leaf,
         bytes32[] calldata merkleProof
-    ) public returns (bool) {
+    ) public view returns (bool) {
         require(auditProofs[auditId].exists, "Audit proof not found");
         
         bytes32 computedHash = leaf;
@@ -71,9 +72,17 @@ contract MerkleAuditProof is Ownable {
             }
         }
 
-        bool isValid = computedHash == root;
+        return computedHash == root;
+    }
+
+    // ✅ MODIFIED: Transaction function that emits event (optional, for on-chain verification records)
+    function verifyLeaf(
+        string memory auditId,
+        bytes32 leaf,
+        bytes32[] calldata merkleProof
+    ) public returns (bool) {
+        bool isValid = checkLeafValidity(auditId, leaf, merkleProof);
         emit LeafVerified(auditId, leaf, isValid);
-        
         return isValid;
     }
 

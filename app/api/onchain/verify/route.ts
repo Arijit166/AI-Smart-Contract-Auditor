@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
         originalCodeHash: audit.originalCodeHash,
         fixedCodeHash: audit.fixedCodeHash,
         riskScore: Number(audit.riskScore),
+        merkleRoot: audit.merkleRoot,
+        merkleLeaves: audit.merkleLeaves || null,
         ipfsPdfCID: audit.ipfsPdfCID,
         ipfsCodeCID: audit.ipfsCodeCID,
         timestamp: Number(audit.timestamp),
