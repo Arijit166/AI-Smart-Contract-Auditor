@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
-  const protectedRoutes = ["/dashboard", "/audit", "/deploy", "/history", "/accounts"]
+  const protectedRoutes = ["/dashboard", "/audit", "/deploy", "/badges", "/reputation", "/merkle-proof","/registry", "/subscription", "/accounts"]
 
   // Check if route is protected
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {

@@ -139,6 +139,7 @@ export default function BadgesPage() {
         await loadBadges()
         await checkEligibility()
          try {
+          if (!account?.address) return;
           const rewardAmount = badge.tier * 2 // Higher tier = more rewards
           const rewardResponse = await fetch('/api/rewards/distribute', {
             method: 'POST',

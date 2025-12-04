@@ -12,6 +12,7 @@ import { useAudit } from "@/lib/audit-context"
 import { useRouter } from "next/navigation"
 import { updateReputation } from "@/lib/services/reputation-service"
 import SubscriptionRequiredModal from "@/components/subscription-required-modal"
+import { useEffect } from "react"
 
 export default function AuditPage() {
   const { account } = useAuth()
@@ -24,6 +25,38 @@ export default function AuditPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [showSubModal, setShowSubModal] = useState(false)
   const [selectedNetwork, setSelectedNetwork] = useState('polygon-amoy')
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('NONE')
+  const [auditCount, setAuditCount] = useState<number>(0)
+
+  useEffect(() => {
+    if (account?.address) {
+      checkSubscriptionAndLimits()
+    }
+  }, [account?.address, selectedNetwork])
+
+  const checkSubscriptionAndLimits = async () => {
+    if (!account?.address) return;
+    try {
+      // Check subscription
+      const subResponse = await fetch(`/api/subscription/status?address=${account.address}&network=${selectedNetwork}`)
+      const subData = await subResponse.json()
+      
+      if (subData.success && subData.hasSubscription) {
+        setSubscriptionTier(subData.subscription.tier)
+      } else {
+        setSubscriptionTier('NONE')
+      }
+      
+      // Get audit count for current month
+      const countResponse = await fetch(`/api/audit/count?address=${account.address}&network=${selectedNetwork}`)
+      const countData = await countResponse.json()
+      if (countData.success) {
+        setAuditCount(countData.count)
+      }
+    } catch (e) {
+      console.error('Failed to check subscription:', e)
+    }
+  }
   const handleFileSelect = (file: File) => {
     if (file && file.name.endsWith(".sol")) {
       const reader = new FileReader()
@@ -53,27 +86,20 @@ export default function AuditPage() {
       return
     }
     
-    // ✅ Check subscription before auditing
-    if (account?.address) {
-      try {
-        const subResponse = await fetch(`/api/subscription/status?address=${account.address}&network=${selectedNetwork}`)
-        const subData = await subResponse.json()
-        
-        if (!subData.success || !subData.hasSubscription || subData.tier === 'NONE') {
-          setShowSubModal(true)
-          return
-        }
-        
-        if (subData.subscription && !subData.subscription.active) {
-          setShowSubModal(true)
-          return
-        }
-        
-      } catch (error) {
-        console.error('Failed to check subscription:', error)
-        alert('Failed to verify subscription status. Please try again.')
-        return
-      }
+    // ✅ CHECK SUBSCRIPTION LIMITS
+    const limits: Record<string, number> = {
+      'NONE': 3,      // Free tier: 3 audits/month
+      'BASIC': 10,
+      'PRO': 50,
+      'ELITE': 999999 // Unlimited
+    }
+    
+    const currentLimit = limits[subscriptionTier]
+    
+    if (auditCount >= currentLimit) {
+      alert(`⚠️ Audit limit reached!\n\nYour current plan (${subscriptionTier}) allows ${currentLimit} audits per month.\n\nUpgrade your subscription to continue.`)
+      router.push('/subscription')
+      return
     }
     
     setIsAuditing(true)
@@ -249,6 +275,29 @@ export default function AuditPage() {
             </button>
           ))}
         </div>
+        {account?.isConnected && (
+          <div className="mb-6 flex justify-center">
+            <Card className="glass-effect border-border p-3 max-w-md">
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <div>
+                  <span className="text-foreground/60">Plan: </span>
+                  <span className="font-bold text-primary">{subscriptionTier}</span>
+                </div>
+                <div>
+                  <span className="text-foreground/60">Audits: </span>
+                  <span className="font-bold text-foreground">
+                    {auditCount}/{subscriptionTier === 'ELITE' ? '∞' : subscriptionTier === 'PRO' ? '50' : subscriptionTier === 'BASIC' ? '10' : '3'}
+                  </span>
+                </div>
+                {subscriptionTier === 'NONE' && (
+                  <a href="/subscription" className="text-primary hover:underline text-xs">
+                    Upgrade →
+                  </a>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Panel - Upload & Code Editor */}
           <div className="space-y-6">

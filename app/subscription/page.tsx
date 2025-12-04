@@ -13,6 +13,8 @@ export default function SubscriptionPage() {
   const [subscribing, setSubscribing] = useState<string | null>(null)
   const [currentSubscription, setCurrentSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [tokenBalance, setTokenBalance] = useState<string>('0')
+  const [loadingBalance, setLoadingBalance] = useState(false)
 
   const networks = [
     { id: "polygon-amoy", name: "Polygon Amoy", icon: "🟣" },
@@ -98,6 +100,19 @@ export default function SubscriptionPage() {
       } else {
         setCurrentSubscription(null)
       }
+      if (!account?.address) return;
+        setLoadingBalance(true)
+        try {
+          const balanceResponse = await fetch(`/api/rewards/balance?address=${account.address}&network=${selectedNetwork}`)
+          const balanceData = await balanceResponse.json()
+          if (balanceData.success) {
+            setTokenBalance(balanceData.balance)
+          }
+        } catch (e) {
+          console.error('Failed to load token balance:', e)
+        } finally {
+          setLoadingBalance(false)
+        }
     } catch (error) {
       console.error('Failed to load subscription:', error)
     } finally {
@@ -273,12 +288,34 @@ export default function SubscriptionPage() {
               </p>
             </Card>
           )}
+
+          {/* ✅ TOKEN BALANCE DISPLAY */}
+          {account?.isConnected && (
+            <Card className="glass-effect border-accent/50 border-2 p-4 max-w-md mx-auto">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-foreground/60">Your AUDIT Balance</p>
+                  <p className="text-3xl font-bold text-amber-500">
+                    {loadingBalance ? '...' : parseFloat(tokenBalance).toFixed(2)}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center">
+                  <span className="text-2xl">🪙</span>
+                </div>
+              </div>
+              <p className="text-xs text-foreground/60 mt-2">
+                Earn tokens by completing audits, deployments, and minting badges
+              </p>
+            </Card>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {tiers.map((tier) => {
             const Icon = tier.icon
             const isSubscribing = subscribing === tier.id
+            const hasEnoughTokens = parseFloat(tokenBalance) >= tier.price
+            const isCurrentPlan = currentSubscription?.tier === tier.id
 
             return (
               <Card
@@ -315,18 +352,32 @@ export default function SubscriptionPage() {
                     ))}
                   </ul>
 
+                  {/* ✅ INSUFFICIENT BALANCE WARNING */}
+                  {!hasEnoughTokens && !isCurrentPlan && account?.isConnected && (
+                    <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-sm text-red-400">
+                      ⚠️ Insufficient balance. Need {tier.price - parseFloat(tokenBalance)} more AUDIT tokens.
+                    </div>
+                  )}
+
                   <Button
                     onClick={() => handleSubscribe(tier.id, tier.price)}
-                    disabled={isSubscribing || !account?.isConnected || currentSubscription?.tier === tier.id}
-                    className="w-full bg-primary hover:bg-primary/90 gap-2 mt-4"
+                    disabled={
+                      isSubscribing || 
+                      !account?.isConnected || 
+                      isCurrentPlan ||
+                      !hasEnoughTokens
+                    }
+                    className="w-full bg-primary hover:bg-primary/90 gap-2 mt-4 disabled:opacity-50"
                   >
                     {isSubscribing ? (
                       <>
                         <Loader className="w-4 h-4 animate-spin" />
                         Subscribing...
                       </>
-                    ) : currentSubscription?.tier === tier.id ? (
+                    ) : isCurrentPlan ? (
                       'Current Plan'
+                    ) : !hasEnoughTokens ? (
+                      'Insufficient Balance'
                     ) : (
                       'Subscribe Now'
                     )}
