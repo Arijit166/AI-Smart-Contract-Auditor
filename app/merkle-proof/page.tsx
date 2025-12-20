@@ -71,8 +71,10 @@ export default function MerkleProofPage() {
 
       const data = await response.json()
       if (data.success) {
-        setIsStored(true)
-        alert('Stored on-chain! TX: ' + data.transactionHash)
+        setIsStored(true) 
+        setTimeout(() => {
+          alert('✅ Stored on-chain!\n\nTX: ' + data.transactionHash)
+        }, 100) 
         if (account?.address) {
           try {
             await fetch('/api/rewards/distribute', {

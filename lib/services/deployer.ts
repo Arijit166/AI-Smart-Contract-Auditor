@@ -41,7 +41,7 @@ export async function compileContract(payload: CompilationPayload): Promise<Comp
   try {
     console.log('🔵 [Compile] Sending to Python backend...')
     
-    const response = await fetch('http://localhost:8000/api/compile', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/compile`,  {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

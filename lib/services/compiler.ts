@@ -1,5 +1,29 @@
 import { ethers } from 'ethers'
 
+interface NetworkConfig {
+  rpc: string
+  name: string
+  chainId: number
+}
+
+const networks: Record<string, NetworkConfig> = {
+  'polygon-amoy': {
+    rpc: process.env.NEXT_PUBLIC_POLYGON_AMOY_RPC_URL || '',
+    name: 'Polygon Amoy',
+    chainId: 80002,
+  },
+  'flow-testnet': {
+    rpc: process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC_URL || 'https://testnet.evm.nodes.onflow.org',
+    name: 'Flow Testnet',
+    chainId: 545,
+  },
+  'celo-sepolia': {
+    rpc: process.env.NEXT_PUBLIC_CELO_SEPOLIA_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org',
+    name: 'Celo Sepolia',
+    chainId: 11142220,
+  },
+}
+
 interface CompilationPayload {
   contractCode: string
   network: string
@@ -14,9 +38,10 @@ interface CompilationResponse {
 
 export async function compileContract(payload: CompilationPayload): Promise<CompilationResponse> {
   try {
-    console.log('🔵 [Compile] Sending to Python backend...')
+    console.log('🔵 [Compile] Sending to Next.js API...')
     
-    const response = await fetch('http://localhost:8000/api/compile', {
+    // Call Next.js API route instead of Python backend
+    const response = await fetch('/api/compile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28,8 +53,8 @@ export async function compileContract(payload: CompilationPayload): Promise<Comp
 
     const data = await response.json()
 
-    if (!response.ok) {
-      console.error('❌ [Compile] Backend error:', data.error)
+    if (!response.ok || !data.success) {
+      console.error('❌ [Compile] API error:', data.error)
       return {
         success: false,
         error: data.error || 'Compilation failed',
@@ -70,4 +95,12 @@ export async function compileContract(payload: CompilationPayload): Promise<Comp
       error: error.message || 'Compilation failed',
     }
   }
+}
+
+export function getNetworkConfig(network: string): NetworkConfig | null {
+  return networks[network] || null
+}
+
+export function isValidNetwork(network: string): boolean {
+  return network in networks
 }
