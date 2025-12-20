@@ -1,0 +1,19 @@
+{
+  "name": "audit-contracts",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon-amoy",
+    "deploy:flow": "hardhat run scripts/deploy.js --network flow-testnet",
+    "deploy:celo": "hardhat run scripts/deploy.js --network celo-sepolia",
+    "deploy:all": "npm run deploy:polygon && npm run deploy:flow && npm run deploy:celo"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.27.1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "ethers": "^6.15.0"
+  }
+}

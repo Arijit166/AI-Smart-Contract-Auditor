@@ -107,7 +107,7 @@ export default function AuditPage() {
     
     try {
       // Run audit
-      const response = await fetch("http://localhost:8000/api/audit", {
+      const response = await fetch("/api/audit/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
